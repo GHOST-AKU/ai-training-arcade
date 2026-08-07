@@ -40,6 +40,9 @@ const levels = [
     shortName: "三团",
     name: "入门：三块地盘",
     target: 0.82,
+    maxRounds: 3,
+    startK: 3,
+    startRate: 1,
     baselineScale: 4.8,
     k: 3,
     description: "三群样本边界清楚，拖动质心到大致中心后再迭代。",
@@ -54,6 +57,9 @@ const levels = [
     shortName: "拉长",
     name: "进阶：拉长簇",
     target: 0.76,
+    maxRounds: 3,
+    startK: 2,
+    startRate: 0.25,
     baselineScale: 4.4,
     k: 3,
     description: "有些簇像长条，K-Means 会用圆形地盘近似它们。",
@@ -68,6 +74,9 @@ const levels = [
     shortName: "四岛",
     name: "挑战：四座小岛",
     target: 0.8,
+    maxRounds: 3,
+    startK: 3,
+    startRate: 0.25,
     baselineScale: 4.7,
     k: 4,
     description: "四个小簇靠得更近，空簇和错误归属会更明显。",
@@ -124,9 +133,10 @@ function resetGame() {
   const level = levels[currentLevel];
   history.clear();
   modelVersion += 1;
-  clusterCount.value = level.k;
+  clusterCount.value = level.startK;
+  moveRate.value = level.startRate;
   const points = makePoints(level);
-  const centroids = makeCentroids(level, level.k);
+  const centroids = makeCentroids(level, level.startK);
   const assignments = assign(points, centroids);
   state = {
     points,
@@ -139,7 +149,7 @@ function resetGame() {
     revision: 0,
   };
   state.baseline = Math.max(0.08, metrics(assignments, centroids).inertia * level.baselineScale);
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关迭代预算：${level.maxRounds} 轮。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "拖动质心，或让 K-Means 自动完成“分配 -> 移动”的循环。";
   latestText.textContent = "未迭代：每个样本会归到最近的质心旗下。";
@@ -161,6 +171,13 @@ function saveSnapshot(logAdded) {
 }
 
 function step() {
+  const level = levels[currentLevel];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多迭代 ${level.maxRounds} 轮。检查 K 值、移动速度或质心位置后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   saveSnapshot(true);
 
   const before = metrics();
@@ -179,8 +196,17 @@ function step() {
   controller.trainingLog.add(latestText.textContent);
   controller.render();
   updateHud();
-  if (after.score >= levels[currentLevel].target && after.movement < 0.035) {
-    toast.textContent = `通关！质心基本稳定，聚合得分 ${after.score.toFixed(2)}。`;
+  if (after.score >= level.target && after.movement < 0.035 && state.centroids.length === level.k) {
+    toast.textContent = `通关！质心基本稳定，聚合得分 ${after.score.toFixed(2)}，用了 ${state.round}/${level.maxRounds} 轮。`;
+    latestText.textContent = toast.textContent;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = state.centroids.length !== level.k
+      ? `K=${state.centroids.length} 与数据中的 ${level.k} 个簇不匹配`
+      : Number(moveRate.value) < 0.5
+        ? "质心移动过慢，尚未稳定"
+        : "初始质心位置和移动策略没有及时收敛";
+    toast.textContent = `预算耗尽：${reason}。调整后重置再试。`;
     latestText.textContent = toast.textContent;
     controller.stopAuto();
   }
@@ -211,7 +237,7 @@ function updateHud() {
   runtime.setText(scoreValue, result.score.toFixed(2));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestScore.toFixed(2)}` : "等待开始");
-  runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)} · 预算 ${levels[currentLevel].maxRounds} 轮`);
   runtime.setProgress(progressFill, result.score / levels[currentLevel].target);
   clusterLabel.textContent = clusterCount.value;
   rateLabel.textContent = Number(moveRate.value).toFixed(2);
@@ -222,6 +248,7 @@ function updateHud() {
   stableLabel.textContent = `${Math.round(result.stability * 100)}%`;
   kLabel.textContent = state.centroids.length;
   bestScoreLabel.textContent = state.bestScore.toFixed(2);
+  stepBtn.disabled = state.round >= levels[currentLevel].maxRounds;
 }
 
 function setView(view) {

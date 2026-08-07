@@ -35,9 +35,9 @@ const fieldRenderer = runtime.createFieldRenderer(ctx);
 const metricsMemo = runtime.createMemo(() => modelMath.metrics(state.points, state.trees));
 
 const levels = [
-  { shortName: "阶梯", name: "入门：矩形阶梯", target: 0.9, description: "每棵树用矩形切分，森林投票后边界更稳定。", points: [[-0.82,-0.58,0],[-0.66,-0.36,0],[-0.5,-0.12,0],[-0.32,0.18,0],[-0.72,0.56,0],[-0.14,-0.62,0],[0.08,-0.42,0],[0.2,-0.12,1],[0.38,0.18,1],[0.56,0.46,1],[0.78,0.66,1],[0.66,-0.32,1],[-0.08,0.48,1],[0.18,0.72,1]] },
-  { shortName: "异或", name: "进阶：异或投票", target: 0.86, description: "单棵浅树容易偏，但多棵随机树会把角落规律投出来。", points: [[-0.82,-0.66,1],[-0.58,-0.48,1],[-0.76,-0.2,1],[-0.36,-0.72,1],[0.42,0.5,1],[0.66,0.72,1],[0.82,0.28,1],[0.28,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.12,0],[0.28,-0.66,0],[0.52,-0.34,0],[0.74,-0.62,0],[0.18,-0.18,0]] },
-  { shortName: "噪声", name: "挑战：带噪森林", target: 0.82, description: "有噪声点时，随机采样和投票能避免单棵树被带偏。", points: [[-0.82,-0.52,0],[-0.62,-0.4,0],[-0.48,0.08,0],[-0.34,0.42,0],[-0.12,-0.2,0],[0.08,0.16,0],[0.02,-0.48,1],[0.28,-0.12,1],[0.46,0.26,1],[0.6,0.5,1],[0.8,0.18,1],[0.64,-0.44,1],[-0.72,0.7,1],[0.72,-0.7,0]] },
+  { shortName: "阶梯", name: "入门：矩形阶梯", target: 0.9, maxTrees: 4, startDepth: 3, startFeatures: 1, description: "每棵树用矩形切分，森林投票后边界更稳定。", points: [[-0.82,-0.58,0],[-0.66,-0.36,0],[-0.5,-0.12,0],[-0.32,0.18,0],[-0.72,0.56,0],[-0.14,-0.62,0],[0.08,-0.42,0],[0.2,-0.12,1],[0.38,0.18,1],[0.56,0.46,1],[0.78,0.66,1],[0.66,-0.32,1],[-0.08,0.48,1],[0.18,0.72,1]] },
+  { shortName: "异或", name: "进阶：异或投票", target: 0.86, maxTrees: 4, startDepth: 1, startFeatures: 1, description: "初始树太浅，无法组合异或角落。调整单树深度，在有限树数内形成稳定投票。", points: [[-0.82,-0.66,1],[-0.58,-0.48,1],[-0.76,-0.2,1],[-0.36,-0.72,1],[0.42,0.5,1],[0.66,0.72,1],[0.82,0.28,1],[0.28,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.12,0],[0.28,-0.66,0],[0.52,-0.34,0],[0.74,-0.62,0],[0.18,-0.18,0]] },
+  { shortName: "噪声", name: "挑战：带噪森林", target: 0.82, maxTrees: 10, startDepth: 1, startFeatures: 1, description: "初始树群表达能力不足。提高合理深度，让随机采样和投票在预算内抵消噪声。", points: [[-0.82,-0.52,0],[-0.62,-0.4,0],[-0.48,0.08,0],[-0.34,0.42,0],[-0.12,-0.2,0],[0.08,0.16,0],[0.02,-0.48,1],[0.28,-0.12,1],[0.46,0.26,1],[0.6,0.5,1],[0.8,0.18,1],[0.64,-0.44,1],[-0.72,0.7,1],[0.72,-0.7,0]] },
 ];
 
 let levelIndex = 0;
@@ -74,6 +74,8 @@ function metrics() {
 
 function resetGame() {
   const level = levels[levelIndex];
+  maxDepth.value = level.startDepth;
+  featureRate.value = level.startFeatures;
   history.clear();
   modelVersion += 1;
   const points = level.points.map(([x, y, label], index) => ({ x, y, label, index }));
@@ -88,7 +90,7 @@ function resetGame() {
     best: 0,
     revision: 0,
   };
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关造林预算：${level.maxTrees} 棵。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "每棵树从 bootstrap 样本里学习，再加入森林投票。";
   latestText.textContent = "未训练：森林里还没有树。";
@@ -100,6 +102,13 @@ function resetGame() {
 }
 
 function trainTree() {
+  const level = levels[levelIndex];
+  if (state.round >= level.maxTrees) {
+    toast.textContent = `预算耗尽：本关最多种 ${level.maxTrees} 棵树。调整深度和候选特征数后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   history.push({ treeCount: state.trees.length, round: state.round, best: state.best });
   const rand = modelMath.rng(1337 + state.round * 97 + levelIndex * 31);
   const bag = modelMath.bootstrap(state.points, rand);
@@ -122,8 +131,15 @@ function trainTree() {
   controller.trainingLog.add(latestText.textContent);
   controller.render();
   updateHud();
-  if (result.score >= levels[levelIndex].target && state.trees.length >= 3) {
-    toast.textContent = `通关！森林投票得分 ${result.score.toFixed(2)}，边界已经稳定。`;
+  if (result.score >= level.target && state.trees.length >= 3) {
+    toast.textContent = `通关！森林投票得分 ${result.score.toFixed(2)}，用了 ${state.trees.length}/${level.maxTrees} 棵树。`;
+    latestText.textContent = toast.textContent;
+    controller.stopAuto();
+  } else if (state.round >= level.maxTrees) {
+    const reason = Number(maxDepth.value) <= 1
+      ? "单树太浅，森林整体仍然欠拟合"
+      : "当前深度与候选特征组合没有形成稳定多数票";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     latestText.textContent = toast.textContent;
     controller.stopAuto();
   }
@@ -154,7 +170,7 @@ function updateHud() {
   state.best = Math.max(state.best, result.score);
   runtime.setText(scoreValue, result.score.toFixed(2));
   runtime.setText(roundValue, state.trees.length);
-  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxTrees} 棵`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
   runtime.setText(bestLabel, state.trees.length ? `最佳 ${state.best.toFixed(2)}` : "等待开始");
   runtime.setText(depthLabel, maxDepth.value);
@@ -165,6 +181,7 @@ function updateHud() {
   runtime.setText(oobLabel, `${Math.round(oobEstimate() * 100)}%`);
   runtime.setText(depthStatLabel, maxDepth.value);
   runtime.setText(bestScoreLabel, state.best.toFixed(2));
+  stepBtn.disabled = state.round >= levels[levelIndex].maxTrees;
 }
 
 function oobEstimate() {

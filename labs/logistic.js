@@ -31,9 +31,9 @@ const biasLabel = $("#biasLabel");
 const bestScoreLabel = $("#bestScoreLabel");
 
 const levels = [
-  { shortName: "直线", name: "入门：清晰边界", target: 0.9, description: "两类样本大致线性可分，学习一条概率边界。", points: [[-0.82,-0.52,0],[-0.64,-0.28,0],[-0.48,0.02,0],[-0.3,0.36,0],[-0.72,0.42,0],[-0.12,-0.46,0],[0.12,-0.22,1],[0.3,0.1,1],[0.46,0.36,1],[0.66,0.58,1],[0.76,-0.2,1],[0.88,0.22,1]] },
-  { shortName: "软边界", name: "进阶：少量重叠", target: 0.84, description: "少数样本混在边界附近，目标是概率稳定而不是硬追每个点。", points: [[-0.86,-0.5,0],[-0.62,-0.42,0],[-0.52,0.12,0],[-0.34,0.42,0],[-0.1,-0.2,0],[0.08,0.16,0],[0.02,-0.46,1],[0.26,-0.1,1],[0.44,0.26,1],[0.58,0.5,1],[0.78,0.18,1],[0.64,-0.42,1]] },
-  { shortName: "斜率", name: "挑战：斜向边界", target: 0.86, description: "边界不是竖线，两个权重必须一起调整。", points: [[-0.82,0.22,0],[-0.68,0.58,0],[-0.46,0.12,0],[-0.28,0.48,0],[-0.12,-0.06,0],[0.12,-0.52,0],[0.08,0.2,1],[0.28,-0.2,1],[0.46,0.08,1],[0.62,-0.38,1],[0.78,0.26,1],[0.88,-0.08,1]] },
+  { shortName: "直线", name: "入门：清晰边界", target: 0.9, maxRounds: 5, startRate: 0.5, startReg: 0.01, description: "两类样本大致线性可分，学习一条概率边界。", points: [[-0.82,-0.52,0],[-0.64,-0.28,0],[-0.48,0.02,0],[-0.3,0.36,0],[-0.72,0.42,0],[-0.12,-0.46,0],[0.12,-0.22,1],[0.3,0.1,1],[0.46,0.36,1],[0.66,0.58,1],[0.76,-0.2,1],[0.88,0.22,1]] },
+  { shortName: "软边界", name: "进阶：少量重叠", target: 0.84, maxRounds: 10, startRate: 0.1, startReg: 0.08, description: "初始配置学习太慢且正则过强。平衡步幅与约束，在预算内得到稳定概率。", points: [[-0.86,-0.5,0],[-0.62,-0.42,0],[-0.52,0.12,0],[-0.34,0.42,0],[-0.1,-0.2,0],[0.08,0.16,0],[0.02,-0.46,1],[0.26,-0.1,1],[0.44,0.26,1],[0.58,0.5,1],[0.78,0.18,1],[0.64,-0.42,1]] },
+  { shortName: "斜率", name: "挑战：斜向边界", target: 0.86, maxRounds: 13, startRate: 0.1, startReg: 0.08, description: "初始配置来不及旋转边界。提高有效学习速度，同时避免权重被正则压平。", points: [[-0.82,0.22,0],[-0.68,0.58,0],[-0.46,0.12,0],[-0.28,0.48,0],[-0.12,-0.06,0],[0.12,-0.52,0],[0.08,0.2,1],[0.28,-0.2,1],[0.46,0.08,1],[0.62,-0.38,1],[0.78,0.26,1],[0.88,-0.08,1]] },
 ];
 
 let levelIndex = 0;
@@ -54,8 +54,10 @@ function metrics(model = state) {
 
 function resetGame() {
   const level = levels[levelIndex];
+  learningRate.value = level.startRate;
+  regularization.value = level.startReg;
   state = { points: level.points.map(([x, y, label]) => ({ x, y, label })), w1: 0.1, w2: -0.1, b: 0, round: 0, best: 0, lossHistory: [] };
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "梯度下降会降低交叉熵，让正类概率升高、负类概率降低。";
   latestText.textContent = "未训练：所有点先按初始概率判断。";
@@ -66,6 +68,13 @@ function resetGame() {
 }
 
 function trainStep() {
+  const level = levels[levelIndex];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多训练 ${level.maxRounds} 轮。调整学习率与正则强度后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   history.push({ w1: state.w1, w2: state.w2, b: state.b, round: state.round, best: state.best });
   const lr = Number(learningRate.value);
   const reg = Number(regularization.value);
@@ -79,8 +88,17 @@ function trainStep() {
   controller.trainingLog.add(latestText.textContent);
   controller.render();
   updateHud();
-  if (result.score >= levels[levelIndex].target) {
-    toast.textContent = `通关！概率边界已经稳定分开两类，得分 ${result.score.toFixed(2)}。`;
+  if (result.score >= level.target) {
+    toast.textContent = `通关！概率边界得分 ${result.score.toFixed(2)}，用了 ${state.round}/${level.maxRounds} 轮。`;
+    latestText.textContent = toast.textContent;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = Number(learningRate.value) <= 0.2
+      ? "学习率过低，边界移动太慢"
+      : Number(regularization.value) >= 0.06
+        ? "正则过强，权重被压得过平"
+        : "当前参数组合没有及时形成稳定概率边界";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     latestText.textContent = toast.textContent;
     controller.stopAuto();
   }
@@ -105,7 +123,7 @@ function updateHud() {
   state.best = Math.max(state.best, result.score);
   runtime.setText(scoreValue, result.score.toFixed(2));
   runtime.setText(roundValue, state.round);
-  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 轮`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.best.toFixed(2)}` : "等待开始");
   rateLabel.textContent = Number(learningRate.value).toFixed(2);
@@ -116,6 +134,7 @@ function updateHud() {
   wLabel.textContent = `${state.w1.toFixed(1)},${state.w2.toFixed(1)}`;
   biasLabel.textContent = state.b.toFixed(2);
   bestScoreLabel.textContent = state.best.toFixed(2);
+  stepBtn.disabled = state.round >= levels[levelIndex].maxRounds;
 }
 
 function setView(next) {

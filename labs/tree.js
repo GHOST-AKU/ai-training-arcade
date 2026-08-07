@@ -37,6 +37,9 @@ const levels = [
     shortName: "直切",
     name: "入门：一刀见效",
     target: 0.9,
+    maxActions: 1,
+    startThreshold: 0,
+    startDepth: 4,
     description: "两类样本大致按 x 分开，先找到能让两边更纯的一刀。",
     points: [
       [-0.82, -0.54, -1], [-0.68, -0.22, -1], [-0.54, 0.18, -1], [-0.44, 0.56, -1],
@@ -48,7 +51,10 @@ const levels = [
     shortName: "阶梯",
     name: "进阶：阶梯边界",
     target: 0.86,
-    description: "真实边界像阶梯，需要多片矩形叶子拼出来。",
+    maxActions: 1,
+    startThreshold: 0.9,
+    startDepth: 4,
+    description: "挑战关关闭最佳切分提示。你只有一次机会，要自己选择轴与阈值切出主要阶梯。",
     points: [
       [-0.82, -0.58, -1], [-0.64, -0.36, -1], [-0.48, -0.1, -1], [-0.32, 0.22, -1],
       [-0.74, 0.58, -1], [-0.18, -0.62, -1], [0.02, -0.42, -1], [0.2, -0.12, 1],
@@ -60,7 +66,10 @@ const levels = [
     shortName: "异或",
     name: "挑战：异或角落",
     target: 0.84,
-    description: "斜线模型会犯难，但树可以用几刀矩形区域拼出角落规律。",
+    maxActions: 4,
+    startThreshold: 0.9,
+    startDepth: 4,
+    description: "挑战关关闭最佳切分提示。用四次有限切分，把异或角落拼成矩形叶子。",
     points: [
       [-0.82, -0.66, 1], [-0.58, -0.48, 1], [-0.76, -0.2, 1], [-0.36, -0.72, 1],
       [0.42, 0.5, 1], [0.66, 0.72, 1], [0.82, 0.28, 1], [0.28, 0.78, 1],
@@ -139,10 +148,12 @@ function resetGame() {
     leaves: [rootLeaf()],
     bestScore: 0,
     lastGain: 0,
+    actions: 0,
   };
   splitAxis = "x";
-  threshold.value = 0;
-  missionText.textContent = level.description;
+  threshold.value = level.startThreshold;
+  maxDepth.value = level.startDepth;
+  missionText.textContent = `${level.description} 本关切分预算：${level.maxActions} 次。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "点击画布或拖动阈值，给当前最混乱的叶子找一刀。";
   latestText.textContent = "未切分：整张地图只有一个叶子，预测全靠多数票。";
@@ -153,15 +164,24 @@ function resetGame() {
 }
 
 function applySplit(useBest = false) {
+  const level = levels[currentLevel];
+  if (state.actions >= level.maxActions) {
+    toast.textContent = `预算耗尽：本关最多尝试 ${level.maxActions} 次切分。调整轴和阈值后重置再试。`;
+    updateHud();
+    return;
+  }
+  state.actions += 1;
   const leaf = activeLeaf();
   const split = useBest ? bestSplit(leaf) : { axis: splitAxis, value: Number(threshold.value), gain: splitGain(leaf, splitAxis, Number(threshold.value)) };
   if (leaf.depth >= Number(maxDepth.value)) {
-    toast.textContent = "当前叶子已经达到最大深度。";
+    toast.textContent = state.actions >= level.maxActions ? "预算耗尽：当前叶子达到最大深度，这次尝试未能形成有效切分。" : "当前叶子已经达到最大深度，这次尝试已消耗。";
+    updateHud();
     return;
   }
   if (!Number.isFinite(split.gain) || split.gain <= 0.001) {
-    toast.textContent = "这一刀没有让叶子变纯，换个轴或阈值试试。";
+    toast.textContent = state.actions >= level.maxActions ? "预算耗尽：这一刀没有让叶子变纯。调整轴或阈值后重置再试。" : "这一刀没有让叶子变纯，换个轴或阈值试试；这次尝试已消耗。";
     latestText.textContent = toast.textContent;
+    updateHud();
     return;
   }
 
@@ -170,6 +190,7 @@ function applySplit(useBest = false) {
     bestScore: state.bestScore,
     lastGain: state.lastGain,
     nextLeafId,
+    actions: state.actions - 1,
   });
 
   const left = { ...leaf, id: nextLeafId++, depth: leaf.depth + 1, parent: leaf.id, rule: `${split.axis}<=${split.value.toFixed(2)}` };
@@ -193,8 +214,11 @@ function applySplit(useBest = false) {
   updateAxisButtons();
   controller.render();
   updateHud();
-  if (result.score >= levels[currentLevel].target) {
-    toast.textContent = `通关！分类得分 ${result.score.toFixed(2)}，用了 ${state.leaves.length} 个叶子。`;
+  if (result.score >= level.target) {
+    toast.textContent = `通关！分类得分 ${result.score.toFixed(2)}，用了 ${state.actions}/${level.maxActions} 次切分。`;
+    latestText.textContent = toast.textContent;
+  } else if (state.actions >= level.maxActions) {
+    toast.textContent = "预算耗尽：现有叶子仍未达到目标纯度。重置后重新规划切分顺序。";
     latestText.textContent = toast.textContent;
   }
 }
@@ -209,6 +233,7 @@ function undo() {
   state.bestScore = previous.bestScore;
   state.lastGain = previous.lastGain;
   nextLeafId = previous.nextLeafId;
+  state.actions = previous.actions;
   latestText.textContent = "撤回一刀，树回到上一版。";
   controller.trainingLog.removeLatest();
   controller.render();
@@ -221,7 +246,7 @@ function updateHud() {
   const split = bestSplit(activeLeaf());
   runtime.setText(scoreValue, result.score.toFixed(2));
   runtime.setText(leafValue, state.leaves.length);
-  runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)} · 预算 ${levels[currentLevel].maxActions} 次`);
   runtime.setProgress(progressFill, result.score / levels[currentLevel].target);
   runtime.setText(bestLabel, state.leaves.length > 1 ? `最佳 ${state.bestScore.toFixed(2)}` : "等待开始");
   thresholdLabel.textContent = Number(threshold.value).toFixed(2);
@@ -233,6 +258,8 @@ function updateHud() {
   depthStatLabel.textContent = result.depth;
   impurityLabel.textContent = result.impurity.toFixed(2);
   bestScoreLabel.textContent = state.bestScore.toFixed(2);
+  stepBtn.disabled = state.actions >= levels[currentLevel].maxActions;
+  bestBtn.disabled = currentLevel > 0 || state.actions >= levels[currentLevel].maxActions;
 }
 
 function setView(view) {
@@ -404,6 +431,10 @@ function trainStep() {
 }
 
 function handleBest() {
+  if (currentLevel > 0) {
+    toast.textContent = "挑战关已关闭最佳切分提示，请自己选择轴和阈值。";
+    return;
+  }
   const split = bestSplit(activeLeaf());
   if (!Number.isFinite(split.gain)) return;
   splitAxis = split.axis;

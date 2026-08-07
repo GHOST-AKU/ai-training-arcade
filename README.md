@@ -66,6 +66,7 @@ npx --yes --package @playwright/cli playwright-cli -s=ml-arcade-qa run-code --fi
 npm run serve  # 启动本地静态服务器
 npm run check  # 检查全部 JavaScript 语法
 npm run visual:check # 检查八个训练场的可视化结构约定
+npm run difficulty # 检查全部训练场的默认故障配置、训练预算与已知解法
 npm run smoke  # 运行纯模型与页面通关 smoke
 npm run benchmark # 运行树切分、森林、聚类和 SVM 热点基准
 npm test       # 完整检查

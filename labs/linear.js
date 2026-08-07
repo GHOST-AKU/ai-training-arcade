@@ -32,9 +32,9 @@ const samplesLabel = $("#samplesLabel");
 const bestScoreLabel = $("#bestScoreLabel");
 
 const levels = [
-  { shortName: "上升", name: "入门：单调上升", target: 0.94, description: "点云沿一条上升直线散开，学习斜率和截距就能通关。", points: [[-0.9,-0.62],[-0.72,-0.5],[-0.52,-0.32],[-0.32,-0.18],[-0.12,-0.02],[0.08,0.1],[0.28,0.22],[0.48,0.42],[0.68,0.52],[0.88,0.68]] },
-  { shortName: "偏移", name: "进阶：截距偏移", target: 0.92, description: "这组数据整体抬高，模型需要同时学斜率和截距。", points: [[-0.9,-0.15],[-0.7,-0.1],[-0.52,0.02],[-0.34,0.14],[-0.1,0.2],[0.12,0.34],[0.34,0.46],[0.54,0.55],[0.74,0.68],[0.9,0.74]] },
-  { shortName: "噪声", name: "挑战：带噪点云", target: 0.86, description: "有几处噪声偏离趋势，不要让直线追着单个点跑。", points: [[-0.9,-0.52],[-0.72,-0.7],[-0.5,-0.18],[-0.3,-0.28],[-0.08,0.08],[0.12,-0.02],[0.32,0.4],[0.5,0.28],[0.72,0.72],[0.9,0.58]] },
+  { shortName: "上升", name: "入门：单调上升", target: 0.94, maxRounds: 4, startRate: 0.25, startBatch: 3, description: "点云沿一条上升直线散开，学习斜率和截距就能通关。", points: [[-0.9,-0.62],[-0.72,-0.5],[-0.52,-0.32],[-0.32,-0.18],[-0.12,-0.02],[0.08,0.1],[0.28,0.22],[0.48,0.42],[0.68,0.52],[0.88,0.68]] },
+  { shortName: "偏移", name: "进阶：截距偏移", target: 0.92, maxRounds: 3, startRate: 0.05, startBatch: 1, description: "初始步幅和每轮更新次数都太小。你要同时推动斜率和截距，在预算内贴近点云。", points: [[-0.9,-0.15],[-0.7,-0.1],[-0.52,0.02],[-0.34,0.14],[-0.1,0.2],[0.12,0.34],[0.34,0.46],[0.54,0.55],[0.74,0.68],[0.9,0.74]] },
+  { shortName: "噪声", name: "挑战：带噪点云", target: 0.86, maxRounds: 3, startRate: 0.05, startBatch: 1, description: "初始训练速度来不及识别主趋势。调整步幅与更新次数，别让有限预算浪费在噪声上。", points: [[-0.9,-0.52],[-0.72,-0.7],[-0.5,-0.18],[-0.3,-0.28],[-0.08,0.08],[0.12,-0.02],[0.32,0.4],[0.5,0.28],[0.72,0.72],[0.9,0.58]] },
 ];
 
 let levelIndex = 0;
@@ -62,9 +62,11 @@ function score() {
 
 function resetGame() {
   const level = levels[levelIndex];
+  learningRate.value = level.startRate;
+  batchSize.value = level.startBatch;
   state = { points: level.points.map(([x, y]) => ({ x, y })), w: 0, b: 0, round: 0, best: 0, loss: [] };
   state.baseline = Math.max(0.08, mse({ w: 0, b: 0 }) * 1.45);
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "训练会沿着 MSE 的负梯度移动直线。";
   latestText.textContent = "未训练：直线从水平线开始，等待梯度下降。";
@@ -75,6 +77,13 @@ function resetGame() {
 }
 
 function trainStep() {
+  const level = levels[levelIndex];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多训练 ${level.maxRounds} 轮。调整学习率和每轮更新次数后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   history.push({ w: state.w, b: state.b, round: state.round, best: state.best });
   const lr = Number(learningRate.value);
   const trained = modelMath.train(state.points, state, lr, Number(batchSize.value));
@@ -89,8 +98,15 @@ function trainStep() {
   controller.trainingLog.add(latestText.textContent);
   controller.render();
   updateHud();
-  if (score() >= levels[levelIndex].target) {
-    toast.textContent = `通关！拟合得分 ${score().toFixed(2)}，直线已经贴住主要趋势。`;
+  if (score() >= level.target) {
+    toast.textContent = `通关！拟合得分 ${score().toFixed(2)}，用了 ${state.round}/${level.maxRounds} 轮。`;
+    latestText.textContent = toast.textContent;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = Number(learningRate.value) <= 0.1 || Number(batchSize.value) <= 1
+      ? "参数更新过慢，直线仍然欠拟合"
+      : "当前学习率与更新次数组合没有及时收敛";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     latestText.textContent = toast.textContent;
     controller.stopAuto();
   }
@@ -116,7 +132,7 @@ function updateHud() {
   const grad = gradient();
   runtime.setText(scoreValue, currentScore.toFixed(2));
   runtime.setText(roundValue, state.round);
-  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 轮`);
   runtime.setProgress(progressFill, currentScore / levels[levelIndex].target);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.best.toFixed(2)}` : "等待开始");
   rateLabel.textContent = Number(learningRate.value).toFixed(2);
@@ -128,6 +144,7 @@ function updateHud() {
   gradLabel.textContent = Math.hypot(grad.dw, grad.db).toFixed(2);
   samplesLabel.textContent = state.points.length;
   bestScoreLabel.textContent = state.best.toFixed(2);
+  stepBtn.disabled = state.round >= levels[levelIndex].maxRounds;
 }
 
 function setView(next) {
