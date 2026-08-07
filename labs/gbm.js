@@ -30,8 +30,9 @@ const levels = [
     name: "入门：单调趋势",
     shortName: "趋势",
     target: 0.010,
-    defaultRate: 0.3,
-    defaultDepth: 3,
+    maxRounds: 5,
+    startRate: 0.3,
+    startDepth: 3,
     description: "先学习一个平滑上升的函数，观察残差如何被逐段吃掉。",
     points: [
       [0.04, 0.18],
@@ -53,9 +54,10 @@ const levels = [
     name: "进阶：波峰与低谷",
     shortName: "波形",
     target: 0.007,
-    defaultRate: 0.28,
-    defaultDepth: 5,
-    description: "目标曲线有转折。复杂度太低会欠拟合，太高又容易追着噪声跑。",
+    maxRounds: 4,
+    startRate: 0.12,
+    startDepth: 2,
+    description: "初始弱树过于简单。你要在有限树数内找到足以追踪转折、又不过度抖动的复杂度。",
     points: [
       [0.04, 0.22],
       [0.1, 0.28],
@@ -77,9 +79,10 @@ const levels = [
     name: "挑战：异常点干扰",
     shortName: "异常",
     target: 0.012,
-    defaultRate: 0.2,
-    defaultDepth: 4,
-    description: "有几个点故意偏离主趋势。小学习率更稳，别让模型被单点牵着走。",
+    maxRounds: 7,
+    startRate: 0.6,
+    startDepth: 7,
+    description: "初始配置会猛追异常点。降低步幅和弱树复杂度，在预算耗尽前找到稳定方案。",
     points: [
       [0.03, 0.2],
       [0.09, 0.27],
@@ -101,9 +104,10 @@ const levels = [
     name: "专家：局部突变",
     shortName: "突变",
     target: 0.006,
-    defaultRate: 0.18,
-    defaultDepth: 7,
-    description: "目标里有窄峰和阶跃。需要更多弱树慢慢叠加，观察每一轮贡献。",
+    maxRounds: 6,
+    startRate: 0.1,
+    startDepth: 2,
+    description: "初始弱树看不清窄峰和阶跃。预算很紧，需要同时控制步幅并提高局部表达能力。",
     points: [
       [0.03, 0.26],
       [0.08, 0.24],
@@ -143,8 +147,8 @@ function initialPrediction() {
 function resetGame() {
   const level = levels[currentLevel];
   targetPoints = makePoints(level);
-  learningRate.value = level.defaultRate;
-  treeDepth.value = level.defaultDepth;
+  learningRate.value = level.startRate;
+  treeDepth.value = level.startDepth;
   history.clear();
   state = {
     predictions: initialPrediction(),
@@ -160,7 +164,7 @@ function resetGame() {
     lastOverfitNoise: null,
   };
   state.initialMse = calcMse(state.predictions);
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 棵弱树。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "先看蓝线的平均猜测，再训练第一棵弱树追残差。平方误差下，残差就是负梯度方向。";
   controller.trainingLog.reset();
@@ -189,6 +193,13 @@ function clampPrediction(value) {
 }
 
 function trainStep() {
+  const level = levels[currentLevel];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多训练 ${level.maxRounds} 棵弱树。调整学习率和分段数后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   const rate = Number(learningRate.value);
   const segments = Number(treeDepth.value);
   const before = calcMse();
@@ -196,7 +207,8 @@ function trainStep() {
   const learner = learnerModel.values;
   const nextRound = state.round + 1;
   const overfitRisk = calcOverfitRisk(rate, segments, nextRound);
-  const shouldOverfit = rate >= 0.52 && segments >= 6 && nextRound >= 3;
+  const riskyConfiguration = rate >= 0.52 && segments >= 6;
+  const shouldOverfit = riskyConfiguration && nextRound >= 2;
   const overfitNoise = shouldOverfit ? buildOverfitNoise(overfitRisk, nextRound) : null;
   const nextPredictions = state.predictions.map((prediction, index) =>
     clampPrediction(prediction + rate * learner[index] + (overfitNoise ? overfitNoise[index] : 0)),
@@ -224,7 +236,7 @@ function trainStep() {
   state.round = nextRound;
   state.bestMse = Math.min(state.bestMse, after);
   state.mseHistory.push(after);
-  if (after <= levels[currentLevel].target && state.completedRound === null && !shouldOverfit) {
+  if (after <= level.target && state.completedRound === null && !riskyConfiguration) {
     state.completedRound = state.round;
   }
   state.lastOverfitNoise = overfitNoise;
@@ -242,8 +254,16 @@ function trainStep() {
   controller.render();
   updateHud();
 
-  if (after <= levels[currentLevel].target && !shouldOverfit) {
-    toast.textContent = `通关！这一关目标 MSE ${levels[currentLevel].target.toFixed(3)}，你用 ${state.completedRound} 棵弱树达成了。`;
+  if (after <= level.target && !riskyConfiguration) {
+    toast.textContent = `通关！这一关目标 MSE ${level.target.toFixed(3)}，你用 ${state.completedRound}/${level.maxRounds} 棵弱树达成了。`;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = riskyConfiguration
+      ? "模型追着局部噪声乱抖"
+      : segments <= 3
+        ? "弱树表达能力不足，仍然欠拟合"
+        : "当前步幅与复杂度组合没有及时收敛";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     controller.stopAuto();
   } else if (controller.isAutoRunning() && state.round > 5 && improvement < 0.00001) {
     toast.textContent = "模型进入平台期：换观察方式看看卡在残差、弱树贡献，还是误差下降曲线。";
@@ -281,12 +301,13 @@ function updateHud() {
   runtime.setText(mseValue, mse.toFixed(4));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestMse.toFixed(4)}` : "等待开始");
-  runtime.setText(targetLabel, `目标 ${level.target.toFixed(3)}`);
+  runtime.setText(targetLabel, `目标 ${level.target.toFixed(3)} · 预算 ${level.maxRounds} 棵`);
   const initial = state.initialMse;
   const score = Math.max(0, Math.min(1, (initial - mse) / Math.max(initial - level.target, 0.0001)));
   runtime.setProgress(progressFill, score);
   runtime.setText(rateLabel, Number(learningRate.value).toFixed(2));
   runtime.setText(depthLabel, `${treeDepth.value} 段`);
+  stepBtn.disabled = state.round >= level.maxRounds && state.completedRound === null;
   document.body.classList.toggle("overfit-mode", state.overfit > 0.15);
 }
 

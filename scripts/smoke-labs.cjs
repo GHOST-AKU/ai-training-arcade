@@ -68,9 +68,15 @@ function run(definition) {
     return elements.get(selector);
   }
 
-  Object.entries(definition.smoke.values || {}).forEach(([selector, value]) => {
-    element(selector).value = value;
-  });
+  function applyValues(values) {
+    Object.entries(values || {}).forEach(([selector, value]) => {
+      const input = element(selector);
+      input.value = value;
+      input.listeners.input?.({ target: input });
+    });
+  }
+
+  applyValues(definition.smoke.values);
 
   const context = {
     console,
@@ -100,6 +106,7 @@ function run(definition) {
 
   const results = [];
   for (let level = 0; level < definition.smoke.levels; level += 1) {
+    applyValues(definition.smoke.levelValues?.[level] || definition.smoke.values);
     let cleared = false;
     for (let step = 0; step < definition.smoke.maxSteps; step += 1) {
       const handler = element(definition.smoke.step).listeners.click;

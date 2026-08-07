@@ -46,8 +46,9 @@ const levels = [
     name: "入门：清晰直线",
     shortName: "直线",
     target: 0.88,
-    defaultC: 1,
-    defaultKernel: 2,
+    maxRounds: 8,
+    startC: 3,
+    startKernel: 1,
     description: "两类样本几乎线性可分。先把边界推到中间，再观察哪些点成了支持向量。",
     points: [
       [-0.86, -0.62, -1], [-0.72, -0.46, -1], [-0.52, -0.58, -1], [-0.36, -0.31, -1],
@@ -59,10 +60,11 @@ const levels = [
   {
     name: "进阶：软间隔",
     shortName: "软间隔",
-    target: 0.82,
-    defaultC: 1.2,
-    defaultKernel: 3,
-    description: "有几个样本挤进了对方地盘。调低 C 可以容忍少量错误，换来更宽的间隔。",
+    target: 0.72,
+    maxRounds: 16,
+    startC: 0.2,
+    startKernel: 1,
+    description: "初始惩罚和核复杂度都太低。你要在预算内扩大间隔，同时容忍少量重叠。",
     points: [
       [-0.86, -0.55, -1], [-0.66, -0.38, -1], [-0.48, -0.28, -1], [-0.26, -0.52, -1],
       [-0.08, -0.18, -1], [0.18, -0.06, -1], [0.34, -0.32, -1], [-0.1, 0.24, -1],
@@ -74,9 +76,10 @@ const levels = [
     name: "挑战：圆形核边界",
     shortName: "圆核",
     target: 0.84,
-    defaultC: 1.6,
-    defaultKernel: 5,
-    description: "正类藏在中心，负类围在外圈。线性边界不够用，需要让核函数弯起来。",
+    maxRounds: 12,
+    startC: 0.2,
+    startKernel: 1,
+    description: "初始线性核切不开圆环。提高核复杂度并控制 C，在预算内把边界弯起来。",
     points: [
       [-0.18, -0.2, 1], [0.12, -0.24, 1], [-0.28, 0.08, 1], [0.18, 0.16, 1],
       [0.0, 0.26, 1], [0.3, -0.02, 1], [-0.08, 0.02, 1],
@@ -88,10 +91,11 @@ const levels = [
   {
     name: "专家：噪声陷阱",
     shortName: "噪声",
-    target: 0.8,
-    defaultC: 1.1,
-    defaultKernel: 4,
-    description: "这关故意放了冲突点。C 和核复杂度太高时，边界会追着噪声乱抖。",
+    target: 0.68,
+    maxRounds: 16,
+    startC: 4,
+    startKernel: 8,
+    description: "初始配置会追着冲突点乱抖。降低 C 和核复杂度，在预算内找到稳定间隔。",
     points: [
       [-0.82, -0.62, -1], [-0.64, -0.22, -1], [-0.48, -0.5, -1], [-0.22, -0.18, -1],
       [0.02, -0.48, -1], [0.22, -0.06, -1], [0.42, -0.36, -1], [-0.7, 0.28, -1],
@@ -129,8 +133,8 @@ function setActiveViewNote(message, reset = false) {
 function resetGame() {
   const level = levels[currentLevel];
   targetPoints = makePoints(level);
-  penaltyC.value = level.defaultC;
-  kernelPower.value = level.defaultKernel;
+  penaltyC.value = level.startC;
+  kernelPower.value = level.startKernel;
   history.clear();
   state = {
     alpha: targetPoints.map(() => 0),
@@ -142,7 +146,7 @@ function resetGame() {
     overfit: 0,
     version: 0,
   };
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "先观察样本，再训练第一轮。SVM 会寻找能最大化分类间隔的边界。";
   setActiveViewNote(viewNotes[activeView], true);
@@ -184,9 +188,17 @@ function metrics(alpha = state.alpha, bias = state.bias) {
 }
 
 function trainStep() {
+  const level = levels[currentLevel];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多训练 ${level.maxRounds} 轮。调整 C 和核复杂度后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   const before = metrics();
   const c = Number(penaltyC.value);
   const complexity = Number(kernelPower.value);
+  const riskyConfiguration = c >= 3.2 && complexity >= 7;
   history.push({
     alpha: [...state.alpha],
     bias: state.bias,
@@ -226,7 +238,7 @@ function trainStep() {
     controller.trainingLog.replaceLatest(`过拟合警报  第 ${state.round} 轮  噪声抖动  得分 ${after.score.toFixed(2)}`);
   }
 
-  if (after.score >= levels[currentLevel].target && state.completedRound === null && !shouldOverfit) {
+  if (after.score >= level.target && state.completedRound === null && !riskyConfiguration) {
     state.completedRound = state.round;
   }
 
@@ -234,8 +246,16 @@ function trainStep() {
   controller.render();
   updateHud();
 
-  if (after.score >= levels[currentLevel].target && !shouldOverfit) {
-    toast.textContent = `通关！目标间隔得分 ${levels[currentLevel].target.toFixed(2)}，你在第 ${state.completedRound} 轮达成。`;
+  if (after.score >= level.target && !riskyConfiguration) {
+    toast.textContent = `通关！目标间隔得分 ${level.target.toFixed(2)}，你在第 ${state.completedRound}/${level.maxRounds} 轮达成。`;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = riskyConfiguration
+      ? "C 与核复杂度过高，边界正在追噪声"
+      : complexity <= 2
+        ? "核复杂度不足，边界形状仍然欠拟合"
+        : "当前 C 与核复杂度组合没有及时稳定";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     controller.stopAuto();
   } else if (controller.isAutoRunning() && state.round > 10 && Math.abs(before.objective - after.objective) < 0.002) {
     toast.textContent = "训练进入平台期：切到“间隔”或“向量”视图，看看是不是 C 太低或核复杂度不够。";
@@ -271,10 +291,11 @@ function updateHud() {
   runtime.setText(mseValue, result.score.toFixed(2));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestScore.toFixed(2)}` : "等待开始");
-  runtime.setText(targetLabel, `目标 ${level.target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${level.target.toFixed(2)} · 预算 ${level.maxRounds} 轮`);
   runtime.setProgress(progressFill, result.score / level.target);
   rateLabel.textContent = Number(penaltyC.value).toFixed(1);
   depthLabel.textContent = `${kernelPower.value} 级`;
+  stepBtn.disabled = state.round >= level.maxRounds && state.completedRound === null;
   updateBoundaryData(result);
   document.body.classList.toggle("overfit-mode", state.overfit > 0.15);
 }

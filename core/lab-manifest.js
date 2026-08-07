@@ -9,7 +9,18 @@
       label: "GBM 训练场",
       model: "./models/gbm-model.js",
       lab: "./labs/gbm.js",
-      smoke: { step: "#stepBtn", next: "#nextLevelBtn", levels: 4, maxSteps: 160 },
+      smoke: {
+        step: "#stepBtn",
+        next: "#nextLevelBtn",
+        levels: 4,
+        maxSteps: 8,
+        levelValues: [
+          { "#learningRate": "0.3", "#treeDepth": "3" },
+          { "#learningRate": "0.28", "#treeDepth": "5" },
+          { "#learningRate": "0.2", "#treeDepth": "4" },
+          { "#learningRate": "0.18", "#treeDepth": "7" },
+        ],
+      },
     },
     {
       id: "svm",
@@ -20,9 +31,15 @@
       smoke: {
         step: "#stepBtn",
         next: "#nextLevelBtn",
-        levels: 1,
-        maxSteps: 120,
-        values: { "#learningRate": "1", "#treeDepth": "2" },
+        levels: 4,
+        maxSteps: 16,
+        values: { "#learningRate": "3", "#treeDepth": "1" },
+        levelValues: [
+          { "#learningRate": "3", "#treeDepth": "1" },
+          { "#learningRate": "3", "#treeDepth": "6" },
+          { "#learningRate": "3", "#treeDepth": "8" },
+          { "#learningRate": "3", "#treeDepth": "6" },
+        ],
       },
     },
     {
@@ -37,6 +54,11 @@
         levels: 3,
         maxSteps: 80,
         values: { "#moveRate": "1" },
+        levelValues: [
+          { "#clusterCount": "3", "#moveRate": "1" },
+          { "#clusterCount": "3", "#moveRate": "1" },
+          { "#clusterCount": "4", "#moveRate": "1" },
+        ],
       },
     },
     {
@@ -48,7 +70,7 @@
       smoke: {
         step: "#bestBtn",
         next: "#nextLevelBtn",
-        levels: 3,
+        levels: 1,
         maxSteps: 20,
         values: { "#threshold": "0", "#maxDepth": "4" },
       },
@@ -65,6 +87,11 @@
         levels: 3,
         maxSteps: 80,
         values: { "#learningRate": "0.25", "#batchSize": "3" },
+        levelValues: [
+          { "#learningRate": "0.25", "#batchSize": "3" },
+          { "#learningRate": "0.25", "#batchSize": "3" },
+          { "#learningRate": "0.25", "#batchSize": "3" },
+        ],
       },
     },
     {
@@ -79,6 +106,11 @@
         levels: 3,
         maxSteps: 80,
         values: { "#learningRate": "0.5", "#regularization": "0.01" },
+        levelValues: [
+          { "#learningRate": "0.5", "#regularization": "0.01" },
+          { "#learningRate": "0.5", "#regularization": "0.01" },
+          { "#learningRate": "0.5", "#regularization": "0.01" },
+        ],
       },
     },
     {
@@ -93,6 +125,11 @@
         levels: 3,
         maxSteps: 80,
         values: { "#learningRate": "0.35", "#epochsPerStep": "10" },
+        levelValues: [
+          { "#learningRate": "0.35", "#epochsPerStep": "10" },
+          { "#learningRate": "0.35", "#epochsPerStep": "10" },
+          { "#learningRate": "0.35", "#epochsPerStep": "10" },
+        ],
       },
     },
     {
@@ -107,6 +144,11 @@
         levels: 3,
         maxSteps: 80,
         values: { "#maxDepth": "3", "#featureRate": "1" },
+        levelValues: [
+          { "#maxDepth": "3", "#featureRate": "1" },
+          { "#maxDepth": "3", "#featureRate": "1" },
+          { "#maxDepth": "3", "#featureRate": "1" },
+        ],
       },
     },
   ];
@@ -116,6 +158,9 @@
     smoke: lab.smoke && Object.freeze({
       ...lab.smoke,
       values: lab.smoke.values && Object.freeze({ ...lab.smoke.values }),
+      levelValues: lab.smoke.levelValues && Object.freeze(
+        lab.smoke.levelValues.map((values) => Object.freeze({ ...values })),
+      ),
     }),
   })));
 })(typeof window === "undefined" ? globalThis : window);

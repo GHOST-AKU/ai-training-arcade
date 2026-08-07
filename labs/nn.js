@@ -32,9 +32,9 @@ const normLabel = $("#normLabel");
 const bestScoreLabel = $("#bestScoreLabel");
 
 const levels = [
-  { shortName: "异或", name: "入门：XOR 角落", target: 0.88, description: "正类在左下和右上，线性边界切不开，需要隐藏层组合两条斜边。", points: [[-0.78,-0.72,1],[-0.52,-0.52,1],[-0.82,-0.28,1],[-0.28,-0.78,1],[0.42,0.48,1],[0.72,0.66,1],[0.82,0.28,1],[0.3,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.08,0],[0.24,-0.66,0],[0.56,-0.36,0],[0.78,-0.62,0],[0.16,-0.18,0]] },
-  { shortName: "圆环", name: "进阶：中心与外圈", target: 0.86, description: "中心点和外圈点要分开，隐藏神经元会围出一块区域。", points: [[-0.12,-0.08,1],[0.08,0.04,1],[-0.02,0.18,1],[0.16,-0.16,1],[-0.22,0.08,1],[0.22,0.2,1],[-0.84,0.02,0],[-0.58,0.58,0],[0.02,0.84,0],[0.62,0.56,0],[0.86,-0.04,0],[0.52,-0.64,0],[-0.08,-0.86,0],[-0.62,-0.54,0]] },
-  { shortName: "弯月", name: "挑战：弯月边界", target: 0.82, description: "边界呈弯月形，训练足够批次后网络会慢慢弯起来。", points: [[-0.82,0.12,1],[-0.66,0.34,1],[-0.42,0.46,1],[-0.12,0.48,1],[0.16,0.38,1],[0.42,0.18,1],[0.66,-0.04,1],[-0.62,-0.42,0],[-0.34,-0.58,0],[-0.04,-0.62,0],[0.26,-0.52,0],[0.52,-0.34,0],[0.76,-0.12,0],[0.1,-0.08,0]] },
+  { shortName: "异或", name: "入门：XOR 角落", target: 0.88, maxRounds: 6, startRate: 0.35, startEpochs: 10, description: "正类在左下和右上，线性边界切不开，需要隐藏层组合两条斜边。", points: [[-0.78,-0.72,1],[-0.52,-0.52,1],[-0.82,-0.28,1],[-0.28,-0.78,1],[0.42,0.48,1],[0.72,0.66,1],[0.82,0.28,1],[0.3,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.08,0],[0.24,-0.66,0],[0.56,-0.36,0],[0.78,-0.62,0],[0.16,-0.18,0]] },
+  { shortName: "圆环", name: "进阶：中心与外圈", target: 0.86, maxRounds: 14, startRate: 0.05, startEpochs: 5, description: "初始反向传播信号太弱。调整学习率和每批轮数，在预算内让隐藏神经元围出中心。", points: [[-0.12,-0.08,1],[0.08,0.04,1],[-0.02,0.18,1],[0.16,-0.16,1],[-0.22,0.08,1],[0.22,0.2,1],[-0.84,0.02,0],[-0.58,0.58,0],[0.02,0.84,0],[0.62,0.56,0],[0.86,-0.04,0],[0.52,-0.64,0],[-0.08,-0.86,0],[-0.62,-0.54,0]] },
+  { shortName: "弯月", name: "挑战：弯月边界", target: 0.82, maxRounds: 3, startRate: 0.05, startEpochs: 5, description: "初始批次无法及时弯曲边界。你只有少量决策机会，需要提高每批训练的有效强度。", points: [[-0.82,0.12,1],[-0.66,0.34,1],[-0.42,0.46,1],[-0.12,0.48,1],[0.16,0.38,1],[0.42,0.18,1],[0.66,-0.04,1],[-0.62,-0.42,0],[-0.34,-0.58,0],[-0.04,-0.62,0],[0.26,-0.52,0],[0.52,-0.34,0],[0.76,-0.12,0],[0.1,-0.08,0]] },
 ];
 
 let levelIndex = 0;
@@ -66,9 +66,11 @@ function hardestPointIndex() {
 
 function resetGame() {
   const level = levels[levelIndex];
+  learningRate.value = level.startRate;
+  epochsPerStep.value = level.startEpochs;
   state = { points: level.points.map(([x, y, label]) => ({ x, y, label })), net: makeNet(), round: 0, best: 0, lossHistory: [], signalPointIndex: 0 };
   modelVersion += 1;
-  missionText.textContent = level.description;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 批。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "每批训练会先前向计算概率，再把误差反向传回隐藏层。";
   latestText.textContent = "未训练：隐藏层还没有形成有效特征。";
@@ -83,6 +85,13 @@ function cloneNet(net) {
 }
 
 function trainStep() {
+  const level = levels[levelIndex];
+  if (state.round >= level.maxRounds) {
+    toast.textContent = `预算耗尽：本关最多训练 ${level.maxRounds} 批。调整学习率和每批轮数后重置再试。`;
+    controller.stopAuto();
+    updateHud();
+    return;
+  }
   history.push({ net: cloneNet(state.net), round: state.round, best: state.best });
   const lr = Number(learningRate.value);
   state.net = modelMath.train(state.points, state.net, lr, Number(epochsPerStep.value));
@@ -97,8 +106,15 @@ function trainStep() {
   controller.trainingLog.add(latestText.textContent);
   controller.render();
   updateHud();
-  if (result.score >= levels[levelIndex].target) {
-    toast.textContent = `通关！网络已经学出非线性边界，得分 ${result.score.toFixed(2)}。`;
+  if (result.score >= level.target) {
+    toast.textContent = `通关！网络得分 ${result.score.toFixed(2)}，用了 ${state.round}/${level.maxRounds} 批。`;
+    latestText.textContent = toast.textContent;
+    controller.stopAuto();
+  } else if (state.round >= level.maxRounds) {
+    const reason = Number(learningRate.value) <= 0.1 || Number(epochsPerStep.value) <= 5
+      ? "反向传播信号太弱，隐藏层仍未形成有效特征"
+      : "当前学习率与批次强度没有及时学出目标边界";
+    toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
     latestText.textContent = toast.textContent;
     controller.stopAuto();
   }
@@ -128,7 +144,7 @@ function updateHud() {
   const norm = Math.sqrt(state.net.h.reduce((sum, unit) => sum + unit.wx ** 2 + unit.wy ** 2 + unit.v ** 2, 0));
   runtime.setText(scoreValue, result.score.toFixed(2));
   runtime.setText(roundValue, state.round);
-  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)}`);
+  runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 批`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.best.toFixed(2)}` : "等待开始");
   rateLabel.textContent = Number(learningRate.value).toFixed(2);
@@ -139,6 +155,7 @@ function updateHud() {
   hiddenLabel.textContent = state.net.h.length;
   normLabel.textContent = norm.toFixed(1);
   bestScoreLabel.textContent = state.best.toFixed(2);
+  stepBtn.disabled = state.round >= levels[levelIndex].maxRounds;
 }
 
 function setView(next) {
