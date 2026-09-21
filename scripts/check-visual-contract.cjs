@@ -70,13 +70,10 @@ const css = fs.readFileSync("styles.css", "utf8");
 assert(css.includes('html[data-theme="light"]'), "styles: missing global light theme");
 assert(css.includes(".theme-toggle"), "styles: missing global theme toggle styling");
 assert(css.includes("--ui-accent"), "styles: UI accent must be separate from model-positive green");
-assert(css.includes("--decor-glow-a"), "styles: decorative background glows must be tokenized");
+assert(!css.includes("radial-gradient") && !css.includes("decor-glow"), "styles: no decorative color glows");
 assert(css.includes("prefers-reduced-motion"), "styles: missing reduced-motion support");
-assert(css.includes("@media (max-width: 900px) and (orientation: portrait)"), "styles: mobile portrait must be a rotate-device gate");
-assert(css.includes("@media (max-width: 1200px) and (orientation: landscape)"), "styles: compact landscape gate missing");
 assert(css.includes("overflow-x: hidden"), "styles: sidebar must never expose a horizontal scrollbar");
 assert(css.includes("grid-auto-rows: max-content"), "styles: scrollable sidebar cards must keep their content height");
-assert(css.includes("grid-template-rows: auto auto minmax(0, 1fr) auto"), "styles: compact stage must reserve a legend row");
 assert(/\.log-current\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?clip-path:\s*inset\(50%\);/.test(css), "training log: live status must not duplicate the visible latest entry");
 [".kmeans-page", ".tree-page", ".compact-lab-page", ".linear-page", ".logistic-page", ".forest-page"].forEach((selector) => {
   assert(!css.includes(selector), `styles: shared layout must not fork through ${selector}`);

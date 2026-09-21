@@ -82,7 +82,7 @@ function createGame(definition) {
   evaluate(definition.model.replace(/^\.\//, ""), context);
   evaluate("core/lab-runtime.js", context);
   evaluate(definition.lab.replace(/^\.\//, ""), context);
-  return { element };
+  return { element, context };
 }
 
 function moveToLevel(game, level) {
@@ -123,104 +123,5 @@ function playTree(game, level) {
   return { cleared: false, turns: sequences[level].length };
 }
 
-const contracts = {
-  svm: {
-    action: "#stepBtn",
-    budgets: [8, 16, 12, 16],
-    solutions: [
-      { "#learningRate": 3, "#treeDepth": 1 },
-      { "#learningRate": 3, "#treeDepth": 1 },
-      { "#learningRate": 3, "#treeDepth": 8 },
-      { "#learningRate": 3, "#treeDepth": 6 },
-    ],
-  },
-  kmeans: {
-    action: "#stepBtn",
-    budgets: [3, 3, 3],
-    solutions: [
-      { "#clusterCount": 3, "#moveRate": 1 },
-      { "#clusterCount": 3, "#moveRate": 1 },
-      { "#clusterCount": 4, "#moveRate": 1 },
-    ],
-  },
-  tree: {
-    action: "#stepBtn",
-    defaultAction: "#stepBtn",
-    budgets: [1, 1, 4],
-    solutions: [{}, {}, {}],
-    playSolution: playTree,
-  },
-  linear: {
-    action: "#stepBtn",
-    budgets: [4, 3, 3],
-    solutions: [
-      { "#learningRate": 0.25, "#batchSize": 3 },
-      { "#learningRate": 0.25, "#batchSize": 3 },
-      { "#learningRate": 0.25, "#batchSize": 3 },
-    ],
-  },
-  logistic: {
-    action: "#stepBtn",
-    budgets: [5, 10, 13],
-    solutions: [
-      { "#learningRate": 0.8, "#regularization": 0.01 },
-      { "#learningRate": 0.8, "#regularization": 0.01 },
-      { "#learningRate": 0.8, "#regularization": 0.01 },
-    ],
-  },
-  nn: {
-    action: "#stepBtn",
-    budgets: [6, 14, 3],
-    solutions: [
-      { "#learningRate": 0.35, "#epochsPerStep": 10 },
-      { "#learningRate": 1.5, "#epochsPerStep": 10 },
-      { "#learningRate": 2, "#epochsPerStep": 10 },
-    ],
-  },
-  forest: {
-    action: "#stepBtn",
-    budgets: [4, 4, 10],
-    solutions: [
-      { "#maxDepth": 3, "#featureRate": 1 },
-      { "#maxDepth": 3, "#featureRate": 1 },
-      { "#maxDepth": 3, "#featureRate": 1 },
-    ],
-  },
-};
 
-const definitions = new Map(loadManifest().filter((item) => item.model).map((item) => [item.id, item]));
-const failures = [];
-
-Object.entries(contracts).forEach(([id, contract]) => {
-  const definition = definitions.get(id);
-  contract.budgets.forEach((budget, level) => {
-    const defaultGame = createGame(definition);
-    moveToLevel(defaultGame, level);
-    const defaultResult = play(defaultGame, contract.defaultAction || contract.action, null, budget);
-    const defaultShouldClear = level === 0;
-    if (defaultResult.cleared !== defaultShouldClear) {
-      failures.push(`${id} level ${level + 1}: default ${defaultResult.cleared ? "cleared" : "failed"}, expected ${defaultShouldClear ? "tutorial clear" : "challenge failure"}`);
-    }
-
-    const solutionGame = createGame(definition);
-    moveToLevel(solutionGame, level);
-    const solutionResult = contract.playSolution
-      ? contract.playSolution(solutionGame, level)
-      : play(solutionGame, contract.action, contract.solutions[level], budget);
-    if (!solutionResult.cleared) failures.push(`${id} level ${level + 1}: solution missed ${budget}-turn budget`);
-
-    if (!defaultGame.element("#targetLabel").textContent.includes(`预算 ${budget}`)) {
-      failures.push(`${id} level ${level + 1}: HUD does not show budget ${budget}`);
-    }
-    if (!defaultShouldClear) {
-      defaultGame.element(contract.defaultAction || contract.action).listeners.click();
-      if (!defaultGame.element("#toast").textContent.match(/预算耗尽|计算预算不足/)) {
-        failures.push(`${id} level ${level + 1}: exhausted action does not explain budget failure`);
-      }
-    }
-    console.log(`${id} L${level + 1}: default=${defaultResult.cleared ? `clear/${defaultResult.turns}` : "fail"} solution=${solutionResult.cleared ? `clear/${solutionResult.turns}` : "fail"}`);
-  });
-});
-
-assert.deepStrictEqual(failures, [], failures.join("\n"));
-console.log("Remaining lab difficulty contracts passed.");
+module.exports = { createGame, loadManifest, play, playTree, moveToLevel };

@@ -21,15 +21,20 @@
     const definition = manifest.find((lab) => lab.id === id);
     if (!definition) throw new Error(`Unknown lab id: ${id}`);
 
+    await loadScripts(["./core/translations.js", "./core/i18n.js"]);
     const sources = definition.model
       ? ["./models/model-core.js", definition.model, "./core/lab-runtime.js", definition.lab]
       : ["./core/lab-runtime.js"];
     await loadScripts(sources);
+    global.LabI18n.start();
   }
 
   start().catch((error) => {
     console.error(error);
     const status = document.querySelector("#toast") || document.querySelector("main");
-    if (status) status.textContent = `训练场加载失败：${error.message}`;
+    if (status) {
+      const message = `训练场加载失败：${error.message}`;
+      status.textContent = global.LabI18n ? global.LabI18n.t(message) : message;
+    }
   });
 })(window);

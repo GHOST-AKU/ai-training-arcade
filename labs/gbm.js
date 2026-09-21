@@ -25,6 +25,9 @@ const modelMath = window.GbmModel;
 const plane = runtime.createCartesianPlane(canvas, { xDomain: [0, 1], yDomain: [0, 1] });
 const history = runtime.createHistory();
 
+const workLimits = [15, 15, 24, 35];
+const stepWork = () => Number(treeDepth.value);
+
 const levels = [
   {
     name: "入门：单调趋势",
@@ -33,7 +36,7 @@ const levels = [
     maxRounds: 5,
     startRate: 0.3,
     startDepth: 3,
-    description: "先学习一个平滑上升的函数，观察残差如何被逐段吃掉。",
+    description: "从上升趋势开始。每训练一棵树，看哪些残差变小了。",
     points: [
       [0.04, 0.18],
       [0.1, 0.2],
@@ -80,9 +83,9 @@ const levels = [
     shortName: "异常",
     target: 0.012,
     maxRounds: 7,
-    startRate: 0.6,
+    startRate: 0.05,
     startDepth: 7,
-    description: "初始配置会猛追异常点。降低步幅和弱树复杂度，在预算耗尽前找到稳定方案。",
+    description: "点云中混有异常点。比较残差，再决定每棵树需要多少分段；分段会消耗计算预算。",
     points: [
       [0.03, 0.2],
       [0.09, 0.27],
@@ -144,11 +147,11 @@ function initialPrediction() {
   return targetPoints.map(() => avg);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[currentLevel];
   targetPoints = makePoints(level);
-  learningRate.value = level.startRate;
-  treeDepth.value = level.startDepth;
+  if (!keepParameters) learningRate.value = level.startRate;
+  if (!keepParameters) treeDepth.value = level.startDepth;
   history.clear();
   state = {
     predictions: initialPrediction(),
@@ -160,8 +163,6 @@ function resetGame() {
     bestMse: Number.POSITIVE_INFINITY,
     mseHistory: [],
     completedRound: null,
-    overfit: 0,
-    lastOverfitNoise: null,
   };
   state.initialMse = calcMse(state.predictions);
   missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 棵弱树。`;
@@ -180,17 +181,8 @@ function buildWeakLearner(segments) {
   return modelMath.buildWeakLearner(targetPoints, state.predictions, segments);
 }
 
-function calcOverfitRisk(rate, segments, nextRound) {
-  return modelMath.overfitRisk(rate, segments, nextRound);
-}
 
-function buildOverfitNoise(risk, nextRound) {
-  return modelMath.overfitNoise(targetPoints, risk, nextRound);
-}
 
-function clampPrediction(value) {
-  return modelMath.clampPrediction(value);
-}
 
 function trainStep() {
   const level = levels[currentLevel];
@@ -200,22 +192,20 @@ function trainStep() {
     updateHud();
     return;
   }
+  const previousWork = state.work || 0;
+  if (!runtime.spendWork(state, stepWork(), workLimits[currentLevel])) { controller.stopAuto(); return; }
   const rate = Number(learningRate.value);
   const segments = Number(treeDepth.value);
   const before = calcMse();
   const learnerModel = buildWeakLearner(segments);
   const learner = learnerModel.values;
   const nextRound = state.round + 1;
-  const overfitRisk = calcOverfitRisk(rate, segments, nextRound);
-  const riskyConfiguration = rate >= 0.52 && segments >= 6;
-  const shouldOverfit = riskyConfiguration && nextRound >= 2;
-  const overfitNoise = shouldOverfit ? buildOverfitNoise(overfitRisk, nextRound) : null;
   const nextPredictions = state.predictions.map((prediction, index) =>
-    clampPrediction(prediction + rate * learner[index] + (overfitNoise ? overfitNoise[index] : 0)),
+    prediction + rate * learner[index],
   );
   const after = calcMse(nextPredictions);
 
-  history.push({
+  history.push({ work: previousWork,
     predictions: [...state.predictions],
     lastLearner: state.lastLearner ? [...state.lastLearner] : null,
     lastLearnerMeta: state.lastLearnerMeta ? { leaves: state.lastLearnerMeta.leaves.map((leaf) => ({ ...leaf })) } : null,
@@ -225,8 +215,6 @@ function trainStep() {
     bestMse: state.bestMse,
     mseHistoryLength: state.mseHistory.length,
     completedRound: state.completedRound,
-    overfit: state.overfit,
-    lastOverfitNoise: state.lastOverfitNoise ? [...state.lastOverfitNoise] : null,
   });
   state.lastBefore = [...state.predictions];
   state.predictions = nextPredictions;
@@ -236,31 +224,21 @@ function trainStep() {
   state.round = nextRound;
   state.bestMse = Math.min(state.bestMse, after);
   state.mseHistory.push(after);
-  if (after <= level.target && state.completedRound === null && !riskyConfiguration) {
+  if (after <= level.target && state.completedRound === null) {
     state.completedRound = state.round;
   }
-  state.lastOverfitNoise = overfitNoise;
-  state.overfit = shouldOverfit ? Math.min(1, state.overfit + 0.2 + overfitRisk * 0.25) : Math.max(0, state.overfit - 0.08);
 
   const improvement = Math.max(0, before - after);
-  toast.textContent = `第 ${state.round} 轮：弱树按 ${segments} 段拟合残差，模型按学习率 ${rate.toFixed(
-    2,
-  )} 只走 ηh_m 这一步，误差下降 ${improvement.toFixed(4)}。`;
+  toast.textContent = `第 ${state.round} 轮：${segments} 段，学习率 ${rate.toFixed(2)}。MSE ${before.toFixed(4)} → ${after.toFixed(4)}。`;
   controller.trainingLog.add(`第 ${state.round} 棵树 | ${segments} 段叶子 | MSE ${before.toFixed(4)} 至 ${after.toFixed(4)}`);
-  if (shouldOverfit) {
-    toast.textContent = `OVERFIT MODE：你把噪声也学进去了。学习率 ${rate.toFixed(2)} + ${segments} 段弱树让曲线开始乱抖。`;
-    controller.trainingLog.replaceLatest(`过拟合警报 | 第 ${state.round} 棵树 | 噪声抖动 | MSE ${before.toFixed(4)} 至 ${after.toFixed(4)}`);
-  }
   controller.render();
   updateHud();
 
-  if (after <= level.target && !riskyConfiguration) {
+  if (after <= level.target) {
     toast.textContent = `通关！这一关目标 MSE ${level.target.toFixed(3)}，你用 ${state.completedRound}/${level.maxRounds} 棵弱树达成了。`;
     controller.stopAuto();
   } else if (state.round >= level.maxRounds) {
-    const reason = riskyConfiguration
-      ? "模型追着局部噪声乱抖"
-      : segments <= 3
+    const reason = segments <= 3
         ? "弱树表达能力不足，仍然欠拟合"
         : "当前步幅与复杂度组合没有及时收敛";
     toast.textContent = `预算耗尽：${reason}。调整参数后重置再试。`;
@@ -277,6 +255,7 @@ function undoStep() {
     toast.textContent = "还没有可以撤回的训练轮次。";
     return;
   }
+  state.work = previous.work;
   state.predictions = previous.predictions;
   state.lastLearner = previous.lastLearner;
   state.lastLearnerMeta = previous.lastLearnerMeta;
@@ -286,8 +265,6 @@ function undoStep() {
   state.bestMse = previous.bestMse;
   state.mseHistory.length = previous.mseHistoryLength;
   state.completedRound = previous.completedRound;
-  state.overfit = previous.overfit;
-  state.lastOverfitNoise = previous.lastOverfitNoise;
   controller.trainingLog.removeLatest();
   toast.textContent = "撤回上一棵弱学习器，回到上一轮模型。";
   controller.render();
@@ -295,10 +272,12 @@ function undoStep() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && calcMse() <= levels[currentLevel].target);
+  runtime.setWorkBudget(state.work || 0, workLimits[currentLevel], stepWork());
   const level = levels[currentLevel];
   const mse = calcMse();
   state.bestMse = Math.min(state.bestMse, mse);
-  runtime.setText(mseValue, mse.toFixed(4));
+  runtime.setText(mseValue, runtime.formatGoalMetric(mse, true));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestMse.toFixed(4)}` : "等待开始");
   runtime.setText(targetLabel, `目标 ${level.target.toFixed(3)} · 预算 ${level.maxRounds} 棵`);
@@ -307,8 +286,7 @@ function updateHud() {
   runtime.setProgress(progressFill, score);
   runtime.setText(rateLabel, Number(learningRate.value).toFixed(2));
   runtime.setText(depthLabel, `${treeDepth.value} 段`);
-  stepBtn.disabled = state.round >= level.maxRounds && state.completedRound === null;
-  document.body.classList.toggle("overfit-mode", state.overfit > 0.15);
+  stepBtn.disabled = state.round >= level.maxRounds;
 }
 
 function setView(view) {
@@ -374,27 +352,10 @@ function drawModelPanel(bounds) {
     drawLearner(bounds, false);
     drawLearner(bounds, true);
   }
-  if (state.overfit > 0) drawOverfitGlitch(bounds);
   drawPrediction(bounds, state.predictions, "#55c7f7", 4.5, true);
   drawTargets(bounds);
 }
 
-function drawOverfitGlitch(bounds) {
-  const strength = Math.max(0.25, state.overfit);
-  const jittered = state.predictions.map((value, index) => {
-    const shake = (state.lastOverfitNoise?.[index] || 0) * 1.8;
-    const scan = Math.sin(index * 5.2 + state.round) * 0.018 * strength;
-    return clampPrediction(value + shake + scan);
-  });
-  drawPrediction(bounds, jittered, "rgba(255,95,87,0.9)", 3, false);
-  ctx.save();
-  ctx.fillStyle = "rgba(255,95,87,0.18)";
-  for (let i = 0; i < 7; i += 1) {
-    const y = bounds.top + ((i * 37 + state.round * 11) % Math.max(1, bounds.height));
-    ctx.fillRect(bounds.left, y, bounds.width, 3);
-  }
-  ctx.restore();
-}
 
 function drawResidualPanel(bounds) {
   const zero = bounds.top + bounds.height / 2;
@@ -498,7 +459,7 @@ function drawPanelTitle(bounds, text) {
   ctx.lineWidth = 3;
   ctx.strokeRect(bounds.left + 12, bounds.top + 12, Math.min(bounds.width - 24, 430), 34);
   ctx.fillStyle = "#fff3d6";
-  ctx.font = "14px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "14px 'Arcade Pixel', monospace";
   ctx.fillText(text, bounds.left + 24, bounds.top + 34);
   ctx.restore();
 }
@@ -577,7 +538,7 @@ function drawLeafGuides(bounds, meta, subtle) {
   });
 
   if (!subtle) {
-    ctx.font = "12px Courier New, Microsoft YaHei, monospace";
+    ctx.font = "12px 'Arcade Pixel', monospace";
     ctx.textAlign = "center";
     meta.leaves.forEach((leaf) => {
       const center = bounds.left + ((leaf.xMin + leaf.xMax) / 2) * bounds.width;

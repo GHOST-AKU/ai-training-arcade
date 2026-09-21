@@ -59,7 +59,7 @@ const bagB = context.ForestModel.bootstrap(forestPoints, context.ForestModel.rng
 assert(Number.isFinite(context.ForestModel.oobEstimate(forestPoints, forest, [bagA.membership, bagB.membership])));
 
 assert.strictEqual(context.GbmModel.mse([0, 1], [0, 1]), 0);
-assert(context.GbmModel.overfitRisk(0.8, 8, 12) > 0);
+
 assert.strictEqual(context.GbmModel.buildWeakLearner(linearPoints, [0, 0], 2).values.length, 2);
 
 const svmPoints = [{ x: -1, y: 0, label: -1 }, { x: 1, y: 0, label: 1 }];

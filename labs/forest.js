@@ -34,6 +34,9 @@ const plane = runtime.createCartesianPlane(canvas);
 const fieldRenderer = runtime.createFieldRenderer(ctx);
 const metricsMemo = runtime.createMemo(() => modelMath.metrics(state.points, state.trees));
 
+const workLimits = [28, 28, 70];
+const stepWork = () => (2 ** Number(maxDepth.value) - 1) * Number(featureRate.value);
+
 const levels = [
   { shortName: "阶梯", name: "入门：矩形阶梯", target: 0.9, maxTrees: 4, startDepth: 3, startFeatures: 1, description: "每棵树用矩形切分，森林投票后边界更稳定。", points: [[-0.82,-0.58,0],[-0.66,-0.36,0],[-0.5,-0.12,0],[-0.32,0.18,0],[-0.72,0.56,0],[-0.14,-0.62,0],[0.08,-0.42,0],[0.2,-0.12,1],[0.38,0.18,1],[0.56,0.46,1],[0.78,0.66,1],[0.66,-0.32,1],[-0.08,0.48,1],[0.18,0.72,1]] },
   { shortName: "异或", name: "进阶：异或投票", target: 0.86, maxTrees: 4, startDepth: 1, startFeatures: 1, description: "初始树太浅，无法组合异或角落。调整单树深度，在有限树数内形成稳定投票。", points: [[-0.82,-0.66,1],[-0.58,-0.48,1],[-0.76,-0.2,1],[-0.36,-0.72,1],[0.42,0.5,1],[0.66,0.72,1],[0.82,0.28,1],[0.28,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.12,0],[0.28,-0.66,0],[0.52,-0.34,0],[0.74,-0.62,0],[0.18,-0.18,0]] },
@@ -72,10 +75,10 @@ function metrics() {
   return metricsMemo.get(`${modelVersion}:${state.revision}`);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[levelIndex];
-  maxDepth.value = level.startDepth;
-  featureRate.value = level.startFeatures;
+  if (!keepParameters) maxDepth.value = level.startDepth;
+  if (!keepParameters) featureRate.value = level.startFeatures;
   history.clear();
   modelVersion += 1;
   const points = level.points.map(([x, y, label], index) => ({ x, y, label, index }));
@@ -90,7 +93,7 @@ function resetGame() {
     best: 0,
     revision: 0,
   };
-  missionText.textContent = `${level.description} 本关造林预算：${level.maxTrees} 棵。`;
+  missionText.textContent = `${level.description} 本关造林预算：${level.maxTrees} 棵。至少训练 3 棵树后判定通关。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "每棵树从 bootstrap 样本里学习，再加入森林投票。";
   latestText.textContent = "未训练：森林里还没有树。";
@@ -109,7 +112,9 @@ function trainTree() {
     updateHud();
     return;
   }
-  history.push({ treeCount: state.trees.length, round: state.round, best: state.best });
+  const previousWork = state.work || 0;
+  if (!runtime.spendWork(state, stepWork(), workLimits[levelIndex])) { controller.stopAuto(); return; }
+  history.push({ work: previousWork, treeCount: state.trees.length, round: state.round, best: state.best });
   const rand = modelMath.rng(1337 + state.round * 97 + levelIndex * 31);
   const bag = modelMath.bootstrap(state.points, rand);
   const tree = modelMath.buildTree(bag.sample, 0, Number(maxDepth.value), rand, Number(featureRate.value));
@@ -151,6 +156,7 @@ function undo() {
     toast.textContent = "还没有树可以砍掉。";
     return;
   }
+  state.work = previous.work;
   state.trees.length = previous.treeCount;
   state.bags.length = previous.treeCount;
   state.bagMemberships.length = previous.treeCount;
@@ -166,9 +172,11 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.trees.length >= 3 && metrics().score >= levels[levelIndex].target);
+  runtime.setWorkBudget(state.work || 0, workLimits[levelIndex], stepWork());
   const result = metrics();
   state.best = Math.max(state.best, result.score);
-  runtime.setText(scoreValue, result.score.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(result.score));
   runtime.setText(roundValue, state.trees.length);
   runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxTrees} 棵`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
@@ -301,10 +309,10 @@ function drawPanelFrame(panel, title, subtitle) {
   ctx.lineWidth = 3;
   ctx.strokeRect(panel.left + 1.5, panel.top + 1.5, panel.width - 3, panel.height - 3);
   ctx.fillStyle = "#fff3d6";
-  ctx.font = "bold 15px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "bold 15px 'Arcade Pixel', monospace";
   ctx.fillText(title, panel.left + 12, panel.top + 22);
   ctx.fillStyle = "rgba(255,243,214,0.68)";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(subtitle, panel.left + 12, panel.top + 40);
 }
 
@@ -323,7 +331,7 @@ function drawPixelTree(x, y, size, tree, bag, focus) {
   ctx.fillStyle = shade;
   ctx.fillRect(x + size * 0.18, y + size * 0.68, Math.max(4, size * (bagUnique / state.points.length)), 4);
   ctx.fillStyle = "#05060c";
-  ctx.font = "bold 10px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "bold 10px 'Arcade Pixel', monospace";
   ctx.fillText(String(tree.id), x + 3, y + size - 2);
 }
 
@@ -331,7 +339,7 @@ function drawForestPanel(panel) {
   drawPanelFrame(panel, "FOREST", state.trees.length ? `${state.trees.length} trees / bootstrap + vote` : "plant trees to wake the forest");
   if (!state.trees.length) {
     ctx.fillStyle = "rgba(255,243,214,0.72)";
-    ctx.font = "13px Courier New, Microsoft YaHei, monospace";
+    ctx.font = "13px 'Arcade Pixel', monospace";
     ctx.fillText("No trees yet.", panel.left + 16, panel.top + 78);
     ctx.fillText("Use Seed Tree to train.", panel.left + 16, panel.top + 100);
     drawEmptyGrove(panel);
@@ -363,7 +371,7 @@ function drawEmptyGrove(panel) {
   }
   ctx.globalAlpha = 1;
   ctx.fillStyle = "rgba(255,243,214,0.58)";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText("ghost slots: new trees fill tiles", panel.left + 16, startY + size * 2 + 42);
   ctx.restore();
 }
@@ -389,7 +397,7 @@ function drawTreeGrove(panel) {
   const latest = state.trees[state.trees.length - 1];
   const bag = state.bags[state.bags.length - 1] || [];
   ctx.fillStyle = "rgba(255,243,214,0.72)";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(`latest bag: ${new Set(bag).size}/${state.points.length} unique`, panel.left + 12, startY + rows * (size + 12) + 12);
   ctx.fillText(`split flavor: ${latest.stats.xSplits}x / ${latest.stats.ySplits}y`, panel.left + 12, startY + rows * (size + 12) + 28);
 }
@@ -399,7 +407,7 @@ function drawVoteBoard(panel) {
   const details = voteDetails(focus);
   const top = panel.top + (panel.height < 300 ? 145 : Math.min(232, panel.height * 0.48));
   ctx.fillStyle = "#fff3d6";
-  ctx.font = "bold 12px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "bold 12px 'Arcade Pixel', monospace";
   ctx.fillText(`vote probe #${focus.index + 1}`, panel.left + 12, top);
   const maxDots = Math.min(details.votes.length, Math.floor((panel.width - 26) / 12));
   details.votes.slice(-maxDots).forEach((vote, index) => {
@@ -415,7 +423,7 @@ function drawVoteBoard(panel) {
   ctx.lineWidth = 2;
   ctx.strokeRect(barX, barY, barW, barH);
   ctx.fillStyle = "rgba(255,243,214,0.72)";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(`yes ${details.positive} / no ${details.negative} / margin ${Math.round(details.margin * 100)}%`, barX, barY + 31);
 }
 
@@ -425,7 +433,7 @@ function drawStabilityChart(panel) {
   const compact = panel.height < 300;
   const chart = { x: panel.left + 12, y: panel.bottom - (compact ? 72 : 104), w: panel.width - 26, h: compact ? 42 : 70 };
   ctx.fillStyle = "#fff3d6";
-  ctx.font = "bold 12px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "bold 12px 'Arcade Pixel', monospace";
   ctx.fillText("stability as trees grow", chart.x, chart.y - 10);
   ctx.strokeStyle = "rgba(255,243,214,0.25)";
   ctx.lineWidth = 2;
@@ -446,7 +454,7 @@ function drawStabilityChart(panel) {
   });
   const last = trend[trend.length - 1];
   ctx.fillStyle = "rgba(255,243,214,0.72)";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(`avg margin ${Math.round(last.margin * 100)}%; red ticks = vote flips`, chart.x, chart.y + chart.h + 18);
 }
 
@@ -462,7 +470,7 @@ function drawPoints(b) {
       ctx.strokeRect(x - 12, y - 12, 24, 24);
       if (bagCount > 1) {
         ctx.fillStyle = "#ffd447";
-        ctx.font = "bold 11px Courier New, Microsoft YaHei, monospace";
+        ctx.font = "bold 11px 'Arcade Pixel', monospace";
         ctx.fillText(`x${bagCount}`, x + 10, y - 10);
       }
     }

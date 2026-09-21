@@ -52,10 +52,10 @@ function metrics(model = state) {
   return modelMath.metrics(state.points, model);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[levelIndex];
-  learningRate.value = level.startRate;
-  regularization.value = level.startReg;
+  if (!keepParameters) learningRate.value = level.startRate;
+  if (!keepParameters) regularization.value = level.startReg;
   state = { points: level.points.map(([x, y, label]) => ({ x, y, label })), w1: 0.1, w2: -0.1, b: 0, round: 0, best: 0, lossHistory: [] };
   missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
   levelSubtitle.textContent = level.name;
@@ -119,9 +119,10 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && metrics().score >= levels[levelIndex].target);
   const result = metrics();
   state.best = Math.max(state.best, result.score);
-  runtime.setText(scoreValue, result.score.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(result.score));
   runtime.setText(roundValue, state.round);
   runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 轮`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
@@ -195,7 +196,7 @@ function drawPoints(b) {
 
 function drawWeights(b) {
   ctx.fillStyle = "#ffd447";
-  ctx.font = "18px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "18px 'Arcade Pixel', monospace";
   ctx.fillText(`w1 ${state.w1.toFixed(2)}   w2 ${state.w2.toFixed(2)}   b ${state.b.toFixed(2)}`, b.left + 22, b.top + 44);
 }
 

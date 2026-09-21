@@ -8,25 +8,15 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="home-page" data-lab="home">
+    <nav class="lab-switch" aria-label="切换训练场"></nav>
     <main class="home-shell">
       <section class="home-hero" aria-label="训练场大厅">
         <p class="eyebrow">Machine Learning Arcade</p>
         <h1>机器学习训练场</h1>
-        <p>选一个算法，像玩街机一样观察它如何学习、犯错、收敛和通关。</p>
+        <p>观察数据，调整参数，在预算内完成目标。八种算法，从一条直线开始。</p>
       </section>
 
-      <section class="ensemble-compare" aria-label="集成模型对照">
-        <a href="./gbm.html">
-          <span>Serial Boosting</span>
-          <strong>GBM：串联补错</strong>
-          <small>第 m 棵弱树专门追上一轮没解释掉的残差，模型一步步叠加。</small>
-        </a>
-        <a href="./forest.html">
-          <span>Parallel Voting</span>
-          <strong>随机森林：并联投票</strong>
-          <small>很多树各看一份随机样本和特征，最后用多数票抵消单棵树的偏差。</small>
-        </a>
-      </section>
+
 
       <nav class="lab-grid" aria-label="选择训练场">
         <a href="./gbm.html">
@@ -42,12 +32,12 @@
         <a href="./kmeans.html">
           <span>Cluster Arcade</span>
           <strong>K-Means 聚类</strong>
-          <small>拖动质心，占住样本地盘。</small>
+          <small>找出分组，把质心放到合适的位置。</small>
         </a>
         <a href="./tree.html">
           <span>Tree Split Lab</span>
           <strong>决策树</strong>
-          <small>用最少切分得到更纯叶子。</small>
+          <small>观察两类样本，决定在哪里切。</small>
         </a>
         <a href="./linear.html">
           <span>Line Fit Lab</span>
@@ -62,7 +52,7 @@
         <a href="./nn.html">
           <span>Neural Circuit</span>
           <strong>神经网络</strong>
-          <small>前向点亮，反向修权重。</small>
+          <small>组合隐藏特征，学出弯曲边界。</small>
         </a>
         <a href="./forest.html">
           <span>Forest Vote</span>
@@ -70,6 +60,18 @@
           <small>并联：多棵树独立学习，再多数投票抗噪声。</small>
         </a>
       </nav>
+      <section class="ensemble-compare" aria-label="集成模型对照">
+        <a href="./gbm.html">
+          <span>Serial Boosting</span>
+          <strong>GBM：串联补错</strong>
+          <small>第 m 棵弱树专门追上一轮没解释掉的残差，模型一步步叠加。</small>
+        </a>
+        <a href="./forest.html">
+          <span>Parallel Voting</span>
+          <strong>随机森林：并联投票</strong>
+          <small>很多树各看一份随机样本和特征，最后用多数票抵消单棵树的偏差。</small>
+        </a>
+      </section>
     </main>
     <script src="./core/lab-manifest.js"></script>
     <script src="./core/bootstrap.js"></script>

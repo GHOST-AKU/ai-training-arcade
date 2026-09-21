@@ -131,7 +131,7 @@ expectations.forEach((expectation, level) => {
       `GBM level ${level + 1}: training must stop when the budget is exhausted`,
     );
     assert(
-      defaultGame.element("#toast").textContent.includes("预算耗尽"),
+      defaultGame.element("#toast").textContent.match(/预算耗尽|计算预算不足/),
       `GBM level ${level + 1}: budget failure must explain why training stopped`,
     );
   }

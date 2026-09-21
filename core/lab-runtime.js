@@ -52,16 +52,14 @@
 
   function renderNavigation(container = query(".lab-switch"), activeId = inferLabId()) {
     if (!container) return;
-    const links = LABS.map((lab) => {
-      const link = makeElement("a", { href: lab.href, textContent: lab.label });
-      if (!link) return null;
-      if (lab.id === activeId) {
-        link.className = "active";
-        link.setAttribute && link.setAttribute("aria-current", "page");
-      }
-      return link;
-    }).filter(Boolean);
-    replaceChildren(container, links);
+    const home = makeElement("a", { href: "./index.html", textContent: "ML / ARCADE" });
+    const select = makeElement("select", { className: "lab-select", attributes: { "aria-label": "切换训练场" } });
+    LABS.forEach((lab) => {
+      const option = makeElement("option", { value: lab.href, textContent: lab.label, selected: lab.id === activeId });
+      select.append?.(option);
+    });
+    select.addEventListener("change", () => { global.location.href = select.value; });
+    replaceChildren(container, [home, select].filter(Boolean));
     if (container.dataset) container.dataset.labNav = activeId;
   }
 
@@ -97,7 +95,7 @@
     if (root) root.dataset.theme = normalized;
     if (button) {
       const isLight = normalized === LIGHT_THEME;
-      button.textContent = isLight ? "暗色" : "浅色";
+      button.textContent = isLight ? "◐ 暗色" : "◑ 浅色";
       button.title = isLight ? "切换到暗色模式" : "切换到浅色模式";
       button.setAttribute && button.setAttribute("aria-label", button.title);
       button.setAttribute && button.setAttribute("aria-pressed", String(isLight));
@@ -119,9 +117,17 @@
       writeStoredTheme(theme);
     });
     applyTheme(theme, button);
+    const preferences = makeElement("div", { className: "preferences" });
+    const languageButton = makeElement("button", { type: "button", className: "language-toggle", textContent: global.LabI18n?.getLanguage() === "en" ? "中文" : "EN", attributes: { "aria-label": "Switch language / 切换语言" } });
+    languageButton.addEventListener("click", () => {
+      const next = global.LabI18n.getLanguage() === "en" ? "zh" : "en";
+      global.LabI18n.setLanguage(next);
+      languageButton.textContent = next === "en" ? "中文" : "EN";
+    });
+    preferences.append?.(button, languageButton);
     const nav = query(".lab-switch");
-    if (nav && nav.append) nav.append(button);
-    else if (document.body && document.body.append) document.body.append(button);
+    if (nav && nav.append) nav.append(preferences);
+    else document.body?.append?.(preferences);
     return button;
   }
 
@@ -136,6 +142,35 @@
     const clamped = Math.max(0, Math.min(1, Number(ratio) || 0));
     const width = `${Math.round(clamped * 100)}%`;
     if (element.style.width !== width) element.style.width = width;
+  }
+
+  // Round away from the goal so a rounded number never falsely claims a win.
+  function formatGoalMetric(value, lowerIsBetter = false) {
+    const places = lowerIsBetter ? 4 : 3;
+    const scale = 10 ** places;
+    const rounded = lowerIsBetter ? Math.ceil(value * scale) : Math.floor(value * scale);
+    return (rounded / scale).toFixed(places);
+  }
+
+  function setOutcome(cleared) {
+    const label = query("#outcomeLabel");
+    setText(label, cleared ? "已达标 · 可以进入下一关" : "观察变化，再决定下一步");
+    if (label?.dataset) label.dataset.cleared = String(cleared);
+  }
+
+  // Work is counted per update or allocated tree capacity, not per button click.
+  function setWorkBudget(used, limit, cost) {
+    setText(query("#workLabel"), `计算预算 ${used}/${limit} · 下一步 ${cost}`);
+  }
+
+  function spendWork(state, cost, limit) {
+    const used = state.work || 0;
+    if (used + cost > limit) {
+      setText(query("#toast"), `计算预算不足：剩余 ${limit - used}，这一步需要 ${cost}。减小单步工作量，或保留参数重试。`);
+      return false;
+    }
+    state.work = used + cost;
+    return true;
   }
 
   function renderChoicePicker(container, items, activeIndex, onSelect, getLabel = (item) => item.shortName) {
@@ -286,10 +321,9 @@
       const round = query("#roundValue, #leafValue")?.textContent?.trim() || "0";
       const best = query("#bestLabel")?.textContent?.trim() || "最佳 --";
       const level = query("#levelPicker button.active")?.textContent?.trim() || "--";
-      const target = query("#targetLabel")?.textContent?.trim() || "";
       setText(modalRound, `轮次 ${round}`);
-      setText(modalBest, best.startsWith("最佳") ? best : `最佳 ${best}`);
-      setText(modalLevel, `关卡 ${level}${target ? ` / ${target}` : ""}`);
+      setText(modalBest, /^(最佳|Best)/.test(best) ? best : `最佳 ${best}`);
+      setText(modalLevel, `关卡 ${level}`);
     }
 
     function makeLogItem(message) {
@@ -699,7 +733,7 @@
     context.lineTo(bounds.left, bounds.bottom);
     context.lineTo(bounds.right, bounds.bottom);
     context.stroke();
-    context.font = options.font || "12px Courier New, Microsoft YaHei, monospace";
+    context.font = options.font || "12px 'Arcade Pixel', monospace";
     context.textAlign = "right";
     context.textBaseline = options.xBaseline || "alphabetic";
     context.fillText(options.xLabel || "特征 x1", bounds.right - 8, bounds.bottom - (options.xOffset ?? 10));
@@ -771,6 +805,13 @@
     const context = options.context || (canvas && canvas.getContext && canvas.getContext("2d"));
     const trainingLog = options.trainingLog === false ? null : createTrainingLog();
     const bindings = [];
+    if (context && global.LabI18n && !context.localized) {
+      for (const method of ["fillText", "strokeText", "measureText"]) {
+        const original = context[method]?.bind(context);
+        if (original) context[method] = (text, ...args) => original(global.LabI18n.t(text), ...args);
+      }
+      context.localized = true;
+    }
     let started = false;
 
     function bind(element, event, handler, eventOptions) {
@@ -811,9 +852,9 @@
       surface?.requestDraw();
     }
 
-    function reset() {
+    function reset(keepParameters = false) {
       autoTrainer?.stop();
-      options.reset?.();
+      options.reset?.(keepParameters);
       renderLevels();
       surface?.requestDraw();
     }
@@ -830,10 +871,12 @@
       if (started) return controller;
       started = true;
       surface?.start();
+      document.fonts?.ready.then(() => surface?.requestDraw());
+      bind(global, "languagechange", () => surface?.requestDraw());
       const actions = options.actions || {};
       bind(actions.stepButton || query("#stepBtn"), "click", actions.step);
-      bind(actions.undoButton || query("#undoBtn"), "click", actions.undo);
-      bind(actions.resetButton || query("#resetBtn"), "click", reset);
+      bind(actions.undoButton || query("#undoBtn"), "click", () => { autoTrainer?.stop(); actions.undo?.(); });
+      bind(actions.resetButton || query("#resetBtn"), "click", () => reset(true));
       bind(actions.nextButton || query("#nextLevelBtn"), "click", actions.next || nextLevel);
       if (autoTrainer) bind(options.auto.button || query("#autoBtn"), "click", autoTrainer.toggle);
       if (viewPicker && options.setView) bindings.push(bindSegmentedPicker(viewPicker, selectView));
@@ -907,6 +950,10 @@
     setShapeContext,
     setText,
     setTexts,
+    setWorkBudget,
+    setOutcome,
+    formatGoalMetric,
+    spendWork,
     setupThemeToggle,
   });
 })(window);

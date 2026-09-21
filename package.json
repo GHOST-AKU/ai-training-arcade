@@ -10,6 +10,9 @@
     "difficulty": "node scripts/check-gbm-difficulty.cjs && node scripts/check-other-difficulty.cjs",
     "smoke": "node scripts/smoke-models.cjs && node scripts/smoke-labs.cjs",
     "benchmark": "node scripts/benchmark-models.cjs",
-    "test": "npm run check && npm run visual:check && npm run difficulty && npm run smoke"
+    "test": "npm run check && npm run visual:check && npm run difficulty && npm run playability && npm run i18n:check && npm run smoke",
+    "playability": "node scripts/check-playability.cjs",
+    "i18n:check": "node scripts/check-i18n.cjs",
+    "qa:dom": "node scripts/dom-qa.cjs"
   }
 }

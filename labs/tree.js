@@ -139,7 +139,7 @@ function bestSplit(leaf = activeLeaf()) {
   return modelMath.bestSplit(state.points, leaf, splitAxis, Number(threshold.value));
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[currentLevel];
   nextLeafId = 1;
   history.clear();
@@ -150,9 +150,9 @@ function resetGame() {
     lastGain: 0,
     actions: 0,
   };
-  splitAxis = "x";
-  threshold.value = level.startThreshold;
-  maxDepth.value = level.startDepth;
+  if (!keepParameters) splitAxis = "x";
+  if (!keepParameters) threshold.value = level.startThreshold;
+  if (!keepParameters) maxDepth.value = level.startDepth;
   missionText.textContent = `${level.description} 本关切分预算：${level.maxActions} 次。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "点击画布或拖动阈值，给当前最混乱的叶子找一刀。";
@@ -241,10 +241,11 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.actions > 0 && treeMetrics().score >= levels[currentLevel].target);
   const result = treeMetrics();
   state.bestScore = Math.max(state.bestScore, result.score);
   const split = bestSplit(activeLeaf());
-  runtime.setText(scoreValue, result.score.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(result.score));
   runtime.setText(leafValue, state.leaves.length);
   runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)} · 预算 ${levels[currentLevel].maxActions} 次`);
   runtime.setProgress(progressFill, result.score / levels[currentLevel].target);
@@ -395,7 +396,7 @@ function drawTree(bounds) {
     ctx.fillRect(x - 42, y - 22, 84, 44);
     ctx.strokeRect(x - 42, y - 22, 84, 44);
     ctx.fillStyle = "#fff3d6";
-    ctx.font = "12px Courier New, Microsoft YaHei, monospace";
+    ctx.font = "12px 'Arcade Pixel', monospace";
     ctx.textAlign = "center";
     ctx.fillText(`#${leaf.id}  ${points.length}点`, x, y - 3);
     ctx.fillText(`纯度 ${Math.round((1 - gini(points)) * 100)}%`, x, y + 13);
