@@ -26,6 +26,10 @@ const index = fs.readFileSync("index.html", "utf8");
 assert(index.includes('data-lab="home"'), "index: body must identify the home route");
 assert.deepStrictEqual(scriptsIn(index), sharedScripts, "index: script assembly must use only manifest + bootstrap");
 assert(!/[?&]v=\d+/.test(index), "index: manual cache versions are forbidden");
+labs.forEach((definition) => {
+  const occurrences = index.split(`href="${definition.href}"`).length - 1;
+  assert.strictEqual(occurrences, 1, `index: ${definition.id} must appear exactly once in the game list`);
+});
 
 labs.forEach((definition) => {
   assert(definition.model === `./models/${definition.id}-model.js`, `${definition.id}: model path must follow convention`);
@@ -71,6 +75,11 @@ assert(css.includes('html[data-theme="light"]'), "styles: missing global light t
 assert(css.includes(".theme-toggle"), "styles: missing global theme toggle styling");
 assert(css.includes("--ui-accent"), "styles: UI accent must be separate from model-positive green");
 assert(!css.includes("radial-gradient") && !css.includes("decor-glow"), "styles: no decorative color glows");
+assert(!/body::before\s*\{/.test(css), "styles: never place scanlines over the full page");
+assert(/\.lab-grid span\s*\{[^}]*display:\s*block/.test(css), "home: arcade card labels must stay visible");
+assert(!/html\[data-theme="light"\]\s+\.canvas-wrap\s*\{/.test(css), "styles: canvas must keep its dark plotting surface in light mode");
+const genericButtonHover = css.match(/button:hover:not\(:disabled\)[^{]*\{([^}]*)\}/);
+assert(genericButtonHover && !/(?:^|;)\s*color\s*:/.test(genericButtonHover[1]), "styles: generic button hover must preserve component text colors");
 assert(css.includes("prefers-reduced-motion"), "styles: missing reduced-motion support");
 assert(css.includes("overflow-x: hidden"), "styles: sidebar must never expose a horizontal scrollbar");
 assert(css.includes("grid-auto-rows: max-content"), "styles: scrollable sidebar cards must keep their content height");
@@ -100,6 +109,7 @@ assert(!runtime.includes("setInterval(step"), "runtime: auto training must not u
 const bootstrap = fs.readFileSync("core/bootstrap.js", "utf8");
 assert(bootstrap.includes("definition.model") && bootstrap.includes("definition.lab"), "bootstrap: model/lab loading must come from manifest");
 assert(bootstrap.includes("./models/model-core.js"), "bootstrap: shared model core must load before model adapters");
+assert(runtime.includes('textContent: "👾 ML ARCADE"'), "navigation: restore the pixel arcade mascot");
 
 const treeModel = fs.readFileSync("models/tree-model.js", "utf8");
 const forestModel = fs.readFileSync("models/forest-model.js", "utf8");

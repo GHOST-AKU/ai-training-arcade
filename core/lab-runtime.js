@@ -52,7 +52,7 @@
 
   function renderNavigation(container = query(".lab-switch"), activeId = inferLabId()) {
     if (!container) return;
-    const home = makeElement("a", { href: "./index.html", textContent: "ML / ARCADE" });
+    const home = makeElement("a", { href: "./index.html", className: "brand-lockup", textContent: "👾 ML ARCADE" });
     const select = makeElement("select", { className: "lab-select", attributes: { "aria-label": "切换训练场" } });
     LABS.forEach((lab) => {
       const option = makeElement("option", { value: lab.href, textContent: lab.label, selected: lab.id === activeId });
