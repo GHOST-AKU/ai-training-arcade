@@ -16,7 +16,12 @@ assert.strictEqual(new Set(manifest.map((lab) => lab.id)).size, manifest.length,
 assert.strictEqual(new Set(manifest.map((lab) => lab.href)).size, manifest.length, "manifest: hrefs must be unique");
 
 const labs = manifest.filter((lab) => lab.id !== "home");
-const sharedScripts = ["./core/lab-manifest.js", "./core/bootstrap.js"];
+const bootstrap = fs.readFileSync("core/bootstrap.js", "utf8");
+const assetVersionMatch = bootstrap.match(/const ASSET_VERSION = "([A-Za-z0-9._-]+)";/);
+assert(assetVersionMatch, "bootstrap: missing a shared static asset version");
+const assetVersion = assetVersionMatch[1];
+const versioned = (source) => `${source}?v=${assetVersion}`;
+const sharedScripts = ["./core/lab-manifest.js", "./core/bootstrap.js"].map(versioned);
 
 function scriptsIn(html) {
   return [...html.matchAll(/<script\s+src="([^"]+)"[^>]*><\/script>/g)].map((match) => match[1]);
@@ -25,7 +30,7 @@ function scriptsIn(html) {
 const index = fs.readFileSync("index.html", "utf8");
 assert(index.includes('data-lab="home"'), "index: body must identify the home route");
 assert.deepStrictEqual(scriptsIn(index), sharedScripts, "index: script assembly must use only manifest + bootstrap");
-assert(!/[?&]v=\d+/.test(index), "index: manual cache versions are forbidden");
+assert(index.includes(`href="./styles.css?v=${assetVersion}"`), "index: stylesheet must use the shared asset version");
 labs.forEach((definition) => {
   const occurrences = index.split(`href="${definition.href}"`).length - 1;
   assert.strictEqual(occurrences, 1, `index: ${definition.id} must appear exactly once in the game list`);
@@ -52,7 +57,7 @@ labs.forEach((definition) => {
   const canvas = html.match(/<canvas[^>]*id="chart"[^>]*>([\s\S]*?)<\/canvas>/);
   assert(canvas && canvas[1].trim().length > 20, `${definition.id}: canvas needs useful fallback text`);
   assert.deepStrictEqual(scriptsIn(html), sharedScripts, `${definition.id}: script assembly must use only manifest + bootstrap`);
-  assert(!/[?&]v=\d+/.test(html), `${definition.id}: manual cache versions are forbidden`);
+  assert(html.includes(`href="./styles.css?v=${assetVersion}"`), `${definition.id}: stylesheet must use the shared asset version`);
 
   const source = fs.readFileSync(definition.lab, "utf8");
   assert(source.includes("createLabController"), `${definition.id}: must mount through the shared controller`);
@@ -106,9 +111,9 @@ assert(runtime.includes("entries.unshift"), "runtime: shared training log must b
 assert(runtime.includes("fullLogDirty"), "runtime: full log must render lazily");
 assert(!runtime.includes("setInterval(step"), "runtime: auto training must not use an overlapping fixed interval");
 
-const bootstrap = fs.readFileSync("core/bootstrap.js", "utf8");
 assert(bootstrap.includes("definition.model") && bootstrap.includes("definition.lab"), "bootstrap: model/lab loading must come from manifest");
 assert(bootstrap.includes("./models/model-core.js"), "bootstrap: shared model core must load before model adapters");
+assert(bootstrap.includes("script.src = versionAsset(source)"), "bootstrap: dynamically loaded scripts must use the shared asset version");
 assert(runtime.includes('textContent: "👾 ML ARCADE"'), "navigation: restore the pixel arcade mascot");
 
 const treeModel = fs.readFileSync("models/tree-model.js", "utf8");
