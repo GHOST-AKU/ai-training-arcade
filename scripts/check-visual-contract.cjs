@@ -77,6 +77,9 @@ assert(css.includes("--ui-accent"), "styles: UI accent must be separate from mod
 assert(!css.includes("radial-gradient") && !css.includes("decor-glow"), "styles: no decorative color glows");
 assert(!/body::before\s*\{/.test(css), "styles: never place scanlines over the full page");
 assert(/\.lab-grid span\s*\{[^}]*display:\s*block/.test(css), "home: arcade card labels must stay visible");
+assert(!/html\[data-theme="light"\]\s+\.canvas-wrap\s*\{/.test(css), "styles: canvas must keep its dark plotting surface in light mode");
+const genericButtonHover = css.match(/button:hover:not\(:disabled\)[^{]*\{([^}]*)\}/);
+assert(genericButtonHover && !/(?:^|;)\s*color\s*:/.test(genericButtonHover[1]), "styles: generic button hover must preserve component text colors");
 assert(css.includes("prefers-reduced-motion"), "styles: missing reduced-motion support");
 assert(css.includes("overflow-x: hidden"), "styles: sidebar must never expose a horizontal scrollbar");
 assert(css.includes("grid-auto-rows: max-content"), "styles: scrollable sidebar cards must keep their content height");
