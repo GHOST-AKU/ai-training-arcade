@@ -1,118 +1,144 @@
-# 机器学习训练场
+# AI Training Arcade 👾
 
-一个无需构建的静态交互站，把常见机器学习模型做成街机式训练场。用户可以通过单步训练、自动训练、切换观察视图和调整超参数，直接看到模型如何学习、犯错、收敛和通关。
+**AI Training Arcade** 是一个开源的交互式人工智能学习街机厅。
 
-## 适合谁
+它不是一个算法展示页面，而是一系列可玩的训练场：玩家通过调整参数、观察模型行为、管理计算预算，在关卡中理解人工智能算法为什么成功、为什么失败。
 
-- 想快速获得模型直觉的学习者。
-- 需要课堂演示或技术分享素材的讲解者。
-- 想比较不同模型“形态”的前端/可视化原型作者。
+项目目前从经典机器学习开始，未来将扩展到深度学习、强化学习和更多 AI 方法。
 
-## 训练场
+> Learn AI by playing with it.
 
-- **GBM 梯度提升机**：一棵棵弱树串联补残差，观察加法模型、学习率、弱树复杂度和过拟合。
-- **SVM 最大间隔**：观察决策边界、间隔带、支持向量和核复杂度。
-- **K-Means 聚类**：拖动质心，观察“分配 -> 移动”的迭代。
-- **决策树**：用切分线把样本区域变成更纯的叶子。
-- **线性回归**：用梯度下降移动直线，降低 MSE。
-- **逻辑回归**：观察 sigmoid 概率场、分类边界、交叉熵和权重。
-- **神经网络**：观察隐藏神经元、非线性边界、权重和反向传播误差信号。
-- **随机森林**：用 bootstrap 样本训练多棵树，再通过投票稳定边界。
+## 🎮 当前训练场
 
-## GBM 推荐玩法
+### Classical Machine Learning
 
-1. 打开 `gbm.html`，先看蓝色初始模型：它只猜当前关卡目标值的平均数。
-2. 点一次“训练下一棵”，观察绿色弱树如何追红色残差。
-3. 切到“弱树”视图，看公式 `F_m(x)=F_{m-1}(x)+ηh_m(x)` 对应到灰线、绿线和蓝线。
-4. 调整“学习率 η”和“弱树分段数”，比较步幅、分段数与计算预算之间的取舍。
-5. 切到“误差”视图，看 MSE 曲线是否仍在下降。
+- **GBM 梯度提升机**
+  - 观察弱学习器如何逐轮修正残差
+  - 理解学习率、模型复杂度和过拟合
 
-## 本地运行
+- **SVM 最大间隔**
+  - 调整决策边界与间隔
+  - 理解支持向量和核方法
 
-这个项目没有构建步骤，直接启动一个静态服务器即可：
+- **K-Means 聚类**
+  - 移动质心，观察聚类迭代
+  - 理解无监督学习过程
+
+- **决策树**
+  - 选择切分规则
+  - 理解决策边界如何生成
+
+- **线性回归**
+  - 使用梯度下降拟合数据
+  - 观察损失如何下降
+
+- **逻辑回归**
+  - 探索概率边界和分类
+  - 理解 sigmoid 与交叉熵
+
+- **神经网络**
+  - 观察隐藏层、权重和非线性边界
+  - 理解反向传播的基本思想
+
+- **随机森林**
+  - 比较多棵树的投票结果
+  - 理解集成学习如何降低噪声影响
+
+## 🚀 Roadmap
+
+### Deep Learning
+
+计划加入：
+
+- CNN 像素识别训练场
+- 优化器实验室（SGD / Momentum / Adam）
+- Dropout 与泛化挑战
+- 自编码器压缩实验
+- Attention / Transformer 可视化训练场
+
+### Reinforcement Learning
+
+计划加入：
+
+- Multi-Armed Bandit
+- Grid World
+- Q-Learning
+- Policy Gradient
+- 多智能体实验
+
+### More AI
+
+未来探索：
+
+- 生成模型
+- 表示学习
+- 进化算法
+- AI Agent 系统
+
+## ✨ 设计理念
+
+AI Training Arcade 遵循几个原则：
+
+- **可玩，而不是只可看**
+  - 每个训练场都应该有目标、限制和反馈。
+
+- **理解，而不是背公式**
+  - 动画和交互用于解释算法行为。
+
+- **公平的挑战**
+  - 关卡必须存在可行解，同时避免“万能参数”。
+
+- **透明的 AI**
+  - 展示模型如何学习、犯错和改变。
+
+## 🛠️ 本地运行
+
+项目无需构建，直接启动静态服务器：
 
 ```bash
-python -m http.server 4173 --bind 127.0.0.1
+python -m http.server 4173
 ```
 
-然后打开：
+打开：
 
-```text
-http://127.0.0.1:4173/index.html
+```
+http://127.0.0.1:4173
 ```
 
-也可以直接部署到 GitHub Pages；仓库已有 `.github/workflows/pages.yml`。
+也可以部署到 GitHub Pages。
 
-## 测试与性能基准
-
-测试清单与页面加载清单共用 `core/lab-manifest.js`，不会再分别维护“页面 -> 模型 -> 主按钮 -> 关卡数”的映射。轻量 smoke 会确认全部关卡可以通关、纯模型计算保持确定；真实浏览器脚本会验证 Canvas、训练/撤销、日志弹层、主题、响应式和错误输出。
+## 🧪 开发测试
 
 ```bash
-npm run smoke
-npm run benchmark
+npm test
 ```
 
-浏览器 QA 需要先运行 `npm run serve`，再执行：
+包括：
 
-```bash
-npx --yes --package @playwright/cli playwright-cli -s=ml-arcade-qa open http://127.0.0.1:4173/gbm.html
-npx --yes --package @playwright/cli playwright-cli -s=ml-arcade-qa run-code --filename scripts/browser-qa.js
-npx --yes --package @playwright/cli playwright-cli -s=ml-arcade-qa run-code --filename scripts/performance-qa.js
+- 算法 smoke test
+- 关卡可达性检查
+- UI 结构检查
+- 中英文覆盖检查
+- 性能基准
+
+## 📁 项目结构
+
 ```
-
-## 开发命令
-
-```bash
-npm run serve  # 启动本地静态服务器
-npm run check  # 检查全部 JavaScript 语法
-npm run visual:check # 检查八个训练场的可视化结构约定
-npm run difficulty # 检查全部训练场的默认故障配置、训练预算与已知解法
-npm run smoke  # 运行纯模型与页面通关 smoke
-npm run benchmark # 运行树切分、森林、聚类和 SVM 热点基准
-npm test       # 完整检查
-```
-
-颜色、线型、形态速读和 Canvas 可访问性约定见 `VISUAL_LANGUAGE.md`。
-
-## 项目结构
-
-```text
 .
-├── index.html                 # 训练场大厅
-├── gbm.html ... forest.html   # 保留稳定 URL；只放本场语义内容
-├── core/
-│   ├── lab-manifest.js        # 页面、模型、脚本、导航和 smoke 的唯一清单
-│   ├── bootstrap.js           # 按清单并行获取、按序启动训练场
-│   └── lab-runtime.js         # 控制器、日志、历史、Canvas、字段缓存
-├── labs/                      # 每个训练场独有的状态、文案与绘制层
-│   ├── gbm.js
-│   └── ...
-├── models/
-│   ├── model-core.js          # 二分类统计与树切分共享数学核
-│   ├── gbm-model.js
-│   └── ...                    # 不依赖 DOM 的纯模型模块
-├── styles.css                 # 全站视觉系统
-└── scripts/                   # 契约、smoke、浏览器 QA 与 benchmark
+├── index.html              # Arcade 大厅
+├── core/                   # 公共运行时
+├── models/                 # 纯算法实现
+├── labs/                   # 交互训练场
+├── scripts/                # 测试与工具
+└── styles.css              # UI 系统
 ```
 
-## 新增训练场约定
+## 🤝 开源协议
 
-1. 在 `core/lab-manifest.js` 增加一条定义；导航、bootstrap 和 smoke 会同时获得它。
-2. 保留一个根目录 HTML 作为稳定 URL，公共导航写成空的 `.lab-switch` mount，日志写成 `data-training-log` mount。
-3. 纯算法放进 `models/<id>-model.js`；训练场交互与专属绘制放进 `labs/<id>.js`。
-4. 所有训练场必须通过 `LabRuntime.createLabController()` 装配关卡、视图、自动训练、撤销、重置、日志和 Canvas 生命周期，不能在页面脚本里再复制一套。
-5. 密集分类/聚类背景使用共享 `createFieldRenderer()`；坐标映射、网格和损失曲线使用共享 Canvas 工具。
-6. 每个观察视图都应回答一个概念问题，例如“模型在哪里”“还错在哪里”“本轮学了什么”“损失是否下降”。
+本项目采用 **GNU General Public License v3.0 (GPL-3.0)** 发布。
 
-## 玩法与双语界面修复
+你可以自由使用、修改和分发本项目，但修改后的版本也必须以 GPL-3.0 或兼容协议公开源代码。
 
-支持中英文即时切换、单按钮主题切换和本地中英像素字体。语言切换保留训练进度；重试保留参数，撤销退回计算预算。主操作优先展示，原理与详细数据可展开阅读，竖屏也可以操作。
+## 📜 License
 
-GBM、线性回归、神经网络和森林增加明确的计算/容量预算；SVM 同时检查训练得分和可见验证点，移除了人为制造的过拟合噪声和隐藏禁胜条件。具体规则、全部 26 关的可达性和测试限制见 [修复记录](docs/repair-notes.md)。
-
-```sh
-npm run playability   # 参数空间采样、预算、撤销与重试
-npm run i18n:check    # 中英文文案覆盖
-```
-
-`npm test` 已包含上述检查。额外的无截图 DOM 回归可使用 JSDOM 30.1.0 运行，步骤见修复记录。
+GPL-3.0 © 2026 GHOST-AKU
