@@ -253,7 +253,6 @@ window.LabTranslations = {
   "未迭代：每个样本会归到最近的质心旗下。": "Not iterated yet. Each sample belongs to its nearest centroid.",
   "本轮弱学习器": "Latest weak tree",
   "本轮看点": "What changes",
-  "机器学习训练场": "Machine Learning Arcade",
   "权重": "Weights",
   "权重强度": "Weight magnitude",
   "权重持续变强但损失不降，通常意味着学习步幅不合适。": "If weights grow but loss does not fall, reconsider the learning rate.",
