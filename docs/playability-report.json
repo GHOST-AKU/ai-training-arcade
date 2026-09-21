@@ -1,0 +1,230 @@
+{
+  "methodology": "Deterministic on-grid parameter sampling, plus witnessed solutions for all 26 levels. Not human playtest statistics.",
+  "results": [
+    {
+      "lab": "gbm",
+      "level": 1,
+      "witness": true,
+      "wins": 91,
+      "trials": 152,
+      "fraction": 0.599,
+      "maxClears": false
+    },
+    {
+      "lab": "gbm",
+      "level": 2,
+      "witness": true,
+      "wins": 79,
+      "trials": 152,
+      "fraction": 0.52,
+      "maxClears": false
+    },
+    {
+      "lab": "gbm",
+      "level": 3,
+      "witness": true,
+      "wins": 96,
+      "trials": 152,
+      "fraction": 0.632,
+      "maxClears": false
+    },
+    {
+      "lab": "gbm",
+      "level": 4,
+      "witness": true,
+      "wins": 94,
+      "trials": 152,
+      "fraction": 0.618,
+      "maxClears": false
+    },
+    {
+      "lab": "svm",
+      "level": 1,
+      "witness": true,
+      "wins": 12,
+      "trials": 112,
+      "fraction": 0.107,
+      "maxClears": false
+    },
+    {
+      "lab": "svm",
+      "level": 2,
+      "witness": true,
+      "wins": 25,
+      "trials": 112,
+      "fraction": 0.223,
+      "maxClears": false
+    },
+    {
+      "lab": "svm",
+      "level": 3,
+      "witness": true,
+      "wins": 32,
+      "trials": 112,
+      "fraction": 0.286,
+      "maxClears": true
+    },
+    {
+      "lab": "svm",
+      "level": 4,
+      "witness": true,
+      "wins": 26,
+      "trials": 112,
+      "fraction": 0.232,
+      "maxClears": true
+    },
+    {
+      "lab": "kmeans",
+      "level": 1,
+      "witness": true,
+      "wins": 4,
+      "trials": 16,
+      "fraction": 0.25,
+      "maxClears": false
+    },
+    {
+      "lab": "kmeans",
+      "level": 2,
+      "witness": true,
+      "wins": 2,
+      "trials": 16,
+      "fraction": 0.125,
+      "maxClears": false
+    },
+    {
+      "lab": "kmeans",
+      "level": 3,
+      "witness": true,
+      "wins": 2,
+      "trials": 16,
+      "fraction": 0.125,
+      "maxClears": false
+    },
+    {
+      "lab": "tree",
+      "level": 1,
+      "witness": true,
+      "sampling": "manual four-cut sequence tested separately"
+    },
+    {
+      "lab": "tree",
+      "level": 2,
+      "witness": true,
+      "sampling": "manual four-cut sequence tested separately"
+    },
+    {
+      "lab": "tree",
+      "level": 3,
+      "witness": true,
+      "sampling": "manual four-cut sequence tested separately"
+    },
+    {
+      "lab": "linear",
+      "level": 1,
+      "witness": true,
+      "wins": 34,
+      "trials": 176,
+      "fraction": 0.193,
+      "maxClears": false
+    },
+    {
+      "lab": "linear",
+      "level": 2,
+      "witness": true,
+      "wins": 19,
+      "trials": 176,
+      "fraction": 0.108,
+      "maxClears": false
+    },
+    {
+      "lab": "linear",
+      "level": 3,
+      "witness": true,
+      "wins": 27,
+      "trials": 176,
+      "fraction": 0.153,
+      "maxClears": false
+    },
+    {
+      "lab": "logistic",
+      "level": 1,
+      "witness": true,
+      "wins": 24,
+      "trials": 156,
+      "fraction": 0.154,
+      "maxClears": false
+    },
+    {
+      "lab": "logistic",
+      "level": 2,
+      "witness": true,
+      "wins": 13,
+      "trials": 156,
+      "fraction": 0.083,
+      "maxClears": false
+    },
+    {
+      "lab": "logistic",
+      "level": 3,
+      "witness": true,
+      "wins": 20,
+      "trials": 156,
+      "fraction": 0.128,
+      "maxClears": false
+    },
+    {
+      "lab": "nn",
+      "level": 1,
+      "witness": true,
+      "wins": 166,
+      "trials": 192,
+      "fraction": 0.865,
+      "maxClears": true
+    },
+    {
+      "lab": "nn",
+      "level": 2,
+      "witness": true,
+      "wins": 76,
+      "trials": 192,
+      "fraction": 0.396,
+      "maxClears": false
+    },
+    {
+      "lab": "nn",
+      "level": 3,
+      "witness": true,
+      "wins": 20,
+      "trials": 192,
+      "fraction": 0.104,
+      "maxClears": false
+    },
+    {
+      "lab": "forest",
+      "level": 1,
+      "witness": true,
+      "wins": 5,
+      "trials": 10,
+      "fraction": 0.5,
+      "maxClears": false
+    },
+    {
+      "lab": "forest",
+      "level": 2,
+      "witness": true,
+      "wins": 2,
+      "trials": 10,
+      "fraction": 0.2,
+      "maxClears": false
+    },
+    {
+      "lab": "forest",
+      "level": 3,
+      "witness": true,
+      "wins": 2,
+      "trials": 10,
+      "fraction": 0.2,
+      "maxClears": false
+    }
+  ]
+}

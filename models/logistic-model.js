@@ -23,8 +23,8 @@
   function train(points, model, learningRate, regularization, epochs) {
     const next = { w1: model.w1, w2: model.w2, b: model.b };
     for (let epoch = 0; epoch < epochs; epoch += 1) {
-      let dw1 = regularization * next.w1;
-      let dw2 = regularization * next.w2;
+      let dw1 = 0;
+      let dw2 = 0;
       let db = 0;
       points.forEach((point) => {
         const error = probability(point, next) - point.label;
@@ -32,8 +32,8 @@
         dw2 += error * point.y;
         db += error;
       });
-      next.w1 -= learningRate * dw1 / points.length;
-      next.w2 -= learningRate * dw2 / points.length;
+      next.w1 -= learningRate * (dw1 / points.length + regularization * next.w1);
+      next.w2 -= learningRate * (dw2 / points.length + regularization * next.w2);
       next.b -= learningRate * db / points.length;
     }
     return next;

@@ -129,14 +129,14 @@ function metrics(assignments = state.assignments, centroids = state.centroids) {
   return modelMath.metrics(state.points, assignments, centroids, state.baseline, state.round);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[currentLevel];
   history.clear();
   modelVersion += 1;
-  clusterCount.value = level.startK;
-  moveRate.value = level.startRate;
+  if (!keepParameters) clusterCount.value = level.startK;
+  if (!keepParameters) moveRate.value = level.startRate;
   const points = makePoints(level);
-  const centroids = makeCentroids(level, level.startK);
+  const centroids = makeCentroids(level, Number(clusterCount.value));
   const assignments = assign(points, centroids);
   state = {
     points,
@@ -148,8 +148,11 @@ function resetGame() {
     inertiaHistory: [],
     revision: 0,
   };
-  state.baseline = Math.max(0.08, metrics(assignments, centroids).inertia * level.baselineScale);
-  missionText.textContent = `${level.description} 本关迭代预算：${level.maxRounds} 轮。`;
+  // Keep the score scale fixed when retrying with a different K.
+  const reference = makeCentroids(level, level.startK);
+  const referenceInertia = modelMath.metrics(points, assign(points, reference), reference, 1, 0).inertia;
+  state.baseline = Math.max(0.08, referenceInertia * level.baselineScale);
+  missionText.textContent = `${level.description} 本关迭代预算：${level.maxRounds} 轮。使用 ${level.k} 个质心，移动量须小于 0.035。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "拖动质心，或让 K-Means 自动完成“分配 -> 移动”的循环。";
   latestText.textContent = "未迭代：每个样本会归到最近的质心旗下。";
@@ -232,9 +235,10 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && metrics().score >= levels[currentLevel].target && metrics().movement < 0.035 && state.centroids.length === levels[currentLevel].k);
   const result = metrics();
   state.bestScore = Math.max(state.bestScore, result.score);
-  runtime.setText(scoreValue, result.score.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(result.score));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestScore.toFixed(2)}` : "等待开始");
   runtime.setText(targetLabel, `目标 ${levels[currentLevel].target.toFixed(2)} · 预算 ${levels[currentLevel].maxRounds} 轮`);

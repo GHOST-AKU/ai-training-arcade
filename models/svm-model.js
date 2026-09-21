@@ -1,4 +1,26 @@
 (function registerSvmModel(global) {
+  // Fixed validation samples are never passed to train(). Their labels follow
+  // the clean underlying rule; training levels 2 and 4 include conflicting labels.
+  function makeValidationPoints(levelIndex) {
+    const points = [];
+    if (levelIndex === 2) {
+      for (let i = 0; i < 16; i += 1) {
+        const angle = (i + 0.3) * Math.PI / 8;
+        for (const radius of [0.35, 0.60]) {
+          points.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle), label: radius < 0.45 ? 1 : -1 });
+        }
+      }
+    } else {
+      for (const x of [-0.65, -0.35, 0, 0.35, 0.65]) {
+        for (const offset of [-0.3, -0.15, 0.15, 0.3]) {
+          const y = -x + offset;
+          if (Math.abs(y) < 0.95) points.push({ x, y, label: offset > 0 ? 1 : -1 });
+        }
+      }
+    }
+    return points;
+  }
+
   function gamma(kernelPower) {
     return 0.45 + Number(kernelPower) * 0.34;
   }
@@ -56,7 +78,7 @@
     };
   }
 
-  function metrics(points, alpha, bias, gammaValue, overfit = 0, scorer = createScorer(points, alpha, bias, gammaValue)) {
+  function metrics(points, alpha, bias, gammaValue, _legacyOverfit = 0, scorer = createScorer(points, alpha, bias, gammaValue)) {
     let hinge = 0;
     let correct = 0;
     let outsideMargin = 0;
@@ -81,11 +103,11 @@
     regularizer *= 0.012;
     const accuracy = correct / points.length;
     const marginRate = outsideMargin / points.length;
-    const score = Math.max(0, Math.min(0.99, accuracy * 0.62 + marginRate * 0.38 - overfit * 0.16));
+    const score = Math.max(0, Math.min(0.99, accuracy * 0.62 + marginRate * 0.38));
     return { hinge, objective: hinge + regularizer, accuracy, marginRate, score, supportCount, violations, activeVectors };
   }
 
-  function train(points, alpha, bias, penalty, complexity, round, overfit, kernelMatrix) {
+  function train(points, alpha, bias, penalty, complexity, round, _legacyOverfit, kernelMatrix) {
     const nextAlpha = [...alpha];
     let nextBias = bias;
     const nextRound = round + 1;
@@ -120,10 +142,8 @@
       }
       if (signed > 1.6) nextAlpha[index] *= 0.985;
     }
-    const shouldOverfit = penalty >= 3.2 && complexity >= 7 && nextRound >= 5;
-    const nextOverfit = shouldOverfit ? Math.min(1, overfit + 0.18) : Math.max(0, overfit - 0.08);
-    return { alpha: nextAlpha, bias: nextBias, round: nextRound, overfit: nextOverfit, shouldOverfit };
+    return { alpha: nextAlpha, bias: nextBias, round: nextRound, overfit: 0, shouldOverfit: false };
   }
 
-  global.SvmModel = { createKernelMatrix, createScorer, gamma, kernel, metrics, scorePoint, train };
+  global.SvmModel = { makeValidationPoints, createKernelMatrix, createScorer, gamma, kernel, metrics, scorePoint, train };
 })(typeof window === "undefined" ? globalThis : window);

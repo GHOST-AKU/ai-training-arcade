@@ -10,16 +10,7 @@
     }, 0) / predictions.length;
   }
 
-  function clampPrediction(value) {
-    return Math.max(0.02, Math.min(0.98, value));
-  }
 
-  function overfitRisk(rate, segments, nextRound) {
-    const rateRisk = Math.max(0, (rate - 0.42) / 0.38);
-    const depthRisk = Math.max(0, (segments - 5) / 3);
-    const roundRisk = Math.max(0, (nextRound - 4) / 8);
-    return Math.min(1, rateRisk * 0.45 + depthRisk * 0.35 + roundRisk * 0.2);
-  }
 
   function buildWeakLearner(points, predictions, segments) {
     const ordered = points.map((point, index) => ({ point, index, residual: point.y - predictions[index] })).sort((a, b) => a.point.x - b.point.x);
@@ -70,13 +61,6 @@
     return { values, leaves };
   }
 
-  function overfitNoise(points, risk, nextRound) {
-    const amplitude = risk * (0.025 + Math.min(nextRound, 14) * 0.003);
-    return points.map((point, index) => {
-      const wave = Math.sin((index + 1) * 3.9 + nextRound * 1.7);
-      return (wave * 0.55 + (index % 2 === 0 ? 1 : -1) * 0.45) * amplitude;
-    });
-  }
 
-  global.GbmModel = { buildWeakLearner, clampPrediction, mean, mse, overfitNoise, overfitRisk };
+  global.GbmModel = { buildWeakLearner, mean, mse };
 })(typeof window === "undefined" ? globalThis : window);

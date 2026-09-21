@@ -31,6 +31,9 @@ const gradLabel = $("#gradLabel");
 const samplesLabel = $("#samplesLabel");
 const bestScoreLabel = $("#bestScoreLabel");
 
+const workLimits = [12, 9, 9];
+const stepWork = () => Number(batchSize.value);
+
 const levels = [
   { shortName: "上升", name: "入门：单调上升", target: 0.94, maxRounds: 4, startRate: 0.25, startBatch: 3, description: "点云沿一条上升直线散开，学习斜率和截距就能通关。", points: [[-0.9,-0.62],[-0.72,-0.5],[-0.52,-0.32],[-0.32,-0.18],[-0.12,-0.02],[0.08,0.1],[0.28,0.22],[0.48,0.42],[0.68,0.52],[0.88,0.68]] },
   { shortName: "偏移", name: "进阶：截距偏移", target: 0.92, maxRounds: 3, startRate: 0.05, startBatch: 1, description: "初始步幅和每轮更新次数都太小。你要同时推动斜率和截距，在预算内贴近点云。", points: [[-0.9,-0.15],[-0.7,-0.1],[-0.52,0.02],[-0.34,0.14],[-0.1,0.2],[0.12,0.34],[0.34,0.46],[0.54,0.55],[0.74,0.68],[0.9,0.74]] },
@@ -60,10 +63,10 @@ function score() {
   return modelMath.score(state.points, state, state.baseline);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[levelIndex];
-  learningRate.value = level.startRate;
-  batchSize.value = level.startBatch;
+  if (!keepParameters) learningRate.value = level.startRate;
+  if (!keepParameters) batchSize.value = level.startBatch;
   state = { points: level.points.map(([x, y]) => ({ x, y })), w: 0, b: 0, round: 0, best: 0, loss: [] };
   state.baseline = Math.max(0.08, mse({ w: 0, b: 0 }) * 1.45);
   missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
@@ -84,7 +87,9 @@ function trainStep() {
     updateHud();
     return;
   }
-  history.push({ w: state.w, b: state.b, round: state.round, best: state.best });
+  const previousWork = state.work || 0;
+  if (!runtime.spendWork(state, stepWork(), workLimits[levelIndex])) { controller.stopAuto(); return; }
+  history.push({ work: previousWork, w: state.w, b: state.b, round: state.round, best: state.best });
   const lr = Number(learningRate.value);
   const trained = modelMath.train(state.points, state, lr, Number(batchSize.value));
   state.w = trained.w;
@@ -93,7 +98,7 @@ function trainStep() {
   const currentMse = mse();
   state.loss.push(currentMse);
   state.best = Math.max(state.best, score());
-  toast.textContent = `第 ${state.round} 轮：斜率和截距沿负梯度移动，MSE 降到 ${currentMse.toFixed(3)}。`;
+  toast.textContent = `第 ${state.round} 轮：斜率和截距已更新，MSE 为 ${currentMse.toFixed(3)}。`;
   latestText.textContent = `第 ${state.round} 轮  MSE ${currentMse.toFixed(3)}  w ${state.w.toFixed(2)}  b ${state.b.toFixed(2)}`;
   controller.trainingLog.add(latestText.textContent);
   controller.render();
@@ -127,10 +132,12 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && score() >= levels[levelIndex].target);
+  runtime.setWorkBudget(state.work || 0, workLimits[levelIndex], stepWork());
   const currentScore = score();
   state.best = Math.max(state.best, currentScore);
   const grad = gradient();
-  runtime.setText(scoreValue, currentScore.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(currentScore));
   runtime.setText(roundValue, state.round);
   runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 轮`);
   runtime.setProgress(progressFill, currentScore / levels[levelIndex].target);
@@ -208,7 +215,7 @@ function drawResiduals(b) {
 function drawGradient(b) {
   const grad = gradient();
   ctx.fillStyle = "#22f0a4";
-  ctx.font = "18px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "18px 'Arcade Pixel', monospace";
   ctx.fillText(`dw ${(-grad.dw).toFixed(2)}   db ${(-grad.db).toFixed(2)}`, b.left + 20, b.top + 46);
 }
 

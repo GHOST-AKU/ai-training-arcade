@@ -37,9 +37,11 @@ const scorerMemo = runtime.createMemo(() => modelMath.createScorer(
   state.alpha,
   state.bias,
   gamma(),
-  state.overfit > 0.05 ? (point) => noiseField(point) : null,
 ));
 const kernelMatrixMemo = runtime.createMemo(() => modelMath.createKernelMatrix(targetPoints, gamma()));
+
+const validationTargets = [0.83, 0.88, 0.95, 0.77];
+let validationPoints = [];
 
 const levels = [
   {
@@ -64,7 +66,7 @@ const levels = [
     maxRounds: 16,
     startC: 0.2,
     startKernel: 1,
-    description: "初始惩罚和核复杂度都太低。你要在预算内扩大间隔，同时容忍少量重叠。",
+    description: "样本有少量重叠。比较训练点与验证点，选择能保留整体趋势的边界。",
     points: [
       [-0.86, -0.55, -1], [-0.66, -0.38, -1], [-0.48, -0.28, -1], [-0.26, -0.52, -1],
       [-0.08, -0.18, -1], [0.18, -0.06, -1], [0.34, -0.32, -1], [-0.1, 0.24, -1],
@@ -79,7 +81,7 @@ const levels = [
     maxRounds: 12,
     startC: 0.2,
     startKernel: 1,
-    description: "初始线性核切不开圆环。提高核复杂度并控制 C，在预算内把边界弯起来。",
+    description: "当前 RBF 核的边界太平缓。提高核复杂度并控制 C，在预算内把边界弯起来。",
     points: [
       [-0.18, -0.2, 1], [0.12, -0.24, 1], [-0.28, 0.08, 1], [0.18, 0.16, 1],
       [0.0, 0.26, 1], [0.3, -0.02, 1], [-0.08, 0.02, 1],
@@ -93,9 +95,9 @@ const levels = [
     shortName: "噪声",
     target: 0.68,
     maxRounds: 16,
-    startC: 4,
+    startC: 0.2,
     startKernel: 8,
-    description: "初始配置会追着冲突点乱抖。降低 C 和核复杂度，在预算内找到稳定间隔。",
+    description: "有些样本相互冲突。观察间隔内的点，调整 C 与核宽度，允许少量错分。",
     points: [
       [-0.82, -0.62, -1], [-0.64, -0.22, -1], [-0.48, -0.5, -1], [-0.22, -0.18, -1],
       [0.02, -0.48, -1], [0.22, -0.06, -1], [0.42, -0.36, -1], [-0.7, 0.28, -1],
@@ -130,11 +132,12 @@ function setActiveViewNote(message, reset = false) {
   runtime.setShapeContext(message);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[currentLevel];
   targetPoints = makePoints(level);
-  penaltyC.value = level.startC;
-  kernelPower.value = level.startKernel;
+  validationPoints = modelMath.makeValidationPoints(currentLevel);
+  if (!keepParameters) penaltyC.value = level.startC;
+  if (!keepParameters) kernelPower.value = level.startKernel;
   history.clear();
   state = {
     alpha: targetPoints.map(() => 0),
@@ -143,10 +146,9 @@ function resetGame() {
     bestScore: 0,
     lossHistory: [],
     completedRound: null,
-    overfit: 0,
     version: 0,
   };
-  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。`;
+  missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 轮。空心点只用于验证，不参与训练。`;
   levelSubtitle.textContent = level.name;
   toast.textContent = "先观察样本，再训练第一轮。SVM 会寻找能最大化分类间隔的边界。";
   setActiveViewNote(viewNotes[activeView], true);
@@ -162,12 +164,6 @@ function gamma() {
   return modelMath.gamma(kernelPower.value);
 }
 
-function noiseField(point, round = state.round) {
-  const k = Number(kernelPower.value);
-  const wave = Math.sin(point.x * 17.2 + point.y * 11.7 + round * 0.9);
-  const checker = Math.sin(point.x * 31 - point.y * 27 + round * 1.4);
-  return (wave * 0.55 + checker * 0.45) * state.overfit * (0.35 + k * 0.04);
-}
 
 function scorePoint(point, alpha = state.alpha, bias = state.bias) {
   if (alpha === state.alpha && bias === state.bias) {
@@ -184,7 +180,15 @@ function metrics(alpha = state.alpha, bias = state.bias) {
   const scorer = alpha === state.alpha && bias === state.bias
     ? scorerMemo.get(`${currentLevel}:${state.version}:${kernelPower.value}`)
     : undefined;
-  return modelMath.metrics(targetPoints, alpha, bias, gamma(), state.overfit, scorer);
+  return modelMath.metrics(targetPoints, alpha, bias, gamma(), 0, scorer);
+}
+
+function validationAccuracy() {
+  return validationPoints.filter((point) => classify(point) === point.label).length / validationPoints.length;
+}
+
+function meetsTarget(result = metrics()) {
+  return result.score >= levels[currentLevel].target && validationAccuracy() >= validationTargets[currentLevel];
 }
 
 function trainStep() {
@@ -198,7 +202,6 @@ function trainStep() {
   const before = metrics();
   const c = Number(penaltyC.value);
   const complexity = Number(kernelPower.value);
-  const riskyConfiguration = c >= 3.2 && complexity >= 7;
   history.push({
     alpha: [...state.alpha],
     bias: state.bias,
@@ -206,7 +209,6 @@ function trainStep() {
     bestScore: state.bestScore,
     lossHistoryLength: state.lossHistory.length,
     completedRound: state.completedRound,
-    overfit: state.overfit,
   });
 
   const trained = modelMath.train(
@@ -216,15 +218,13 @@ function trainStep() {
     c,
     complexity,
     state.round,
-    state.overfit,
+    0,
     kernelMatrixMemo.get(`${currentLevel}:${kernelPower.value}`),
   );
   state.alpha = trained.alpha;
   state.bias = trained.bias;
-  state.overfit = trained.overfit;
   state.round = trained.round;
   state.version += 1;
-  const shouldOverfit = trained.shouldOverfit;
   const after = metrics();
   state.bestScore = Math.max(state.bestScore, after.score);
   state.lossHistory.push(after.objective);
@@ -233,12 +233,8 @@ function trainStep() {
   controller.trainingLog.add(`第 ${state.round} 轮  SV ${after.supportCount}  hinge ${after.hinge.toFixed(2)}  得分 ${after.score.toFixed(2)}`);
 
   toast.textContent = `第 ${state.round} 轮：违反间隔的样本被加权，边界向最大间隔移动；当前 ${supportText}。`;
-  if (shouldOverfit) {
-    toast.textContent = `OVERFIT MODE：你把噪声也学进去了。C=${c.toFixed(1)} + 核复杂度 ${complexity} 让边界开始乱抖。`;
-    controller.trainingLog.replaceLatest(`过拟合警报  第 ${state.round} 轮  噪声抖动  得分 ${after.score.toFixed(2)}`);
-  }
 
-  if (after.score >= level.target && state.completedRound === null && !riskyConfiguration) {
+  if (meetsTarget(after) && state.completedRound === null) {
     state.completedRound = state.round;
   }
 
@@ -246,12 +242,12 @@ function trainStep() {
   controller.render();
   updateHud();
 
-  if (after.score >= level.target && !riskyConfiguration) {
+  if (meetsTarget(after)) {
     toast.textContent = `通关！目标间隔得分 ${level.target.toFixed(2)}，你在第 ${state.completedRound}/${level.maxRounds} 轮达成。`;
     controller.stopAuto();
   } else if (state.round >= level.maxRounds) {
-    const reason = riskyConfiguration
-      ? "C 与核复杂度过高，边界正在追噪声"
+    const reason = validationAccuracy() < validationTargets[currentLevel]
+      ? "验证点正确率不足：边界可能过度贴合训练样本，试着调整核宽度"
       : complexity <= 2
         ? "核复杂度不足，边界形状仍然欠拟合"
         : "当前 C 与核复杂度组合没有及时稳定";
@@ -275,7 +271,6 @@ function undoStep() {
   state.bestScore = previous.bestScore;
   state.lossHistory.length = previous.lossHistoryLength;
   state.completedRound = previous.completedRound;
-  state.overfit = previous.overfit;
   state.version += 1;
   controller.trainingLog.removeLatest();
   toast.textContent = "撤回上一轮训练，边界回到上一轮状态。";
@@ -285,19 +280,20 @@ function undoStep() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && meetsTarget());
   const level = levels[currentLevel];
   const result = metrics();
   state.bestScore = Math.max(state.bestScore, result.score);
-  runtime.setText(mseValue, result.score.toFixed(2));
+  runtime.setText(mseValue, runtime.formatGoalMetric(result.score));
   runtime.setText(roundValue, state.round);
   runtime.setText(bestLabel, state.round ? `最佳 ${state.bestScore.toFixed(2)}` : "等待开始");
   runtime.setText(targetLabel, `目标 ${level.target.toFixed(2)} · 预算 ${level.maxRounds} 轮`);
-  runtime.setProgress(progressFill, result.score / level.target);
+  runtime.setProgress(progressFill, Math.min(result.score / level.target, validationAccuracy() / validationTargets[currentLevel]));
+  runtime.setText($("#validationLabel"), `验证正确率 ${Math.round(validationAccuracy() * 100)}% / 目标 ${Math.round(validationTargets[currentLevel] * 100)}%`);
   rateLabel.textContent = Number(penaltyC.value).toFixed(1);
   depthLabel.textContent = `${kernelPower.value} 级`;
-  stepBtn.disabled = state.round >= level.maxRounds && state.completedRound === null;
+  stepBtn.disabled = state.round >= level.maxRounds;
   updateBoundaryData(result);
-  document.body.classList.toggle("overfit-mode", state.overfit > 0.15);
 }
 
 function updateBoundaryData(result = metrics()) {
@@ -394,7 +390,6 @@ function drawDecisionField(bounds, view) {
       return score >= 0 ? [34, 240, 164, Math.round(alpha * 255)] : [59, 215, 255, Math.round(alpha * 255)];
     },
   });
-  if (state.overfit > 0.15) drawOverfitGlitch(bounds);
 }
 
 function drawMarginBand(bounds) {
@@ -429,17 +424,16 @@ function drawSupportInfluence(bounds) {
   setActiveViewNote("这些方框点就是支持向量：边界主要听它们的。");
 }
 
-function drawOverfitGlitch(bounds) {
-  ctx.save();
-  ctx.fillStyle = "rgba(255,95,87,0.16)";
-  for (let i = 0; i < 9; i += 1) {
-    const y = bounds.top + ((i * 31 + state.round * 13) % Math.max(1, bounds.height));
-    ctx.fillRect(bounds.left, y, bounds.width, 4);
-  }
-  ctx.restore();
-}
 
 function drawPoints(bounds, view) {
+  ctx.save();
+  ctx.lineWidth = 2;
+  validationPoints.forEach((point) => {
+    const x = px(point, bounds), y = py(point, bounds);
+    ctx.strokeStyle = point.label > 0 ? "#22f0a4" : "#3bd7ff";
+    ctx.strokeRect(x - 4, y - 4, 8, 8);
+  });
+  ctx.restore();
   ctx.save();
   targetPoints.forEach((point) => {
     const x = px(point, bounds);

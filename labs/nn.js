@@ -31,10 +31,13 @@ const hiddenLabel = $("#hiddenLabel");
 const normLabel = $("#normLabel");
 const bestScoreLabel = $("#bestScoreLabel");
 
+const workLimits = [60, 50, 20];
+const stepWork = () => Number(epochsPerStep.value);
+
 const levels = [
   { shortName: "异或", name: "入门：XOR 角落", target: 0.88, maxRounds: 6, startRate: 0.35, startEpochs: 10, description: "正类在左下和右上，线性边界切不开，需要隐藏层组合两条斜边。", points: [[-0.78,-0.72,1],[-0.52,-0.52,1],[-0.82,-0.28,1],[-0.28,-0.78,1],[0.42,0.48,1],[0.72,0.66,1],[0.82,0.28,1],[0.3,0.78,1],[-0.72,0.46,0],[-0.48,0.72,0],[-0.22,0.28,0],[-0.66,0.08,0],[0.24,-0.66,0],[0.56,-0.36,0],[0.78,-0.62,0],[0.16,-0.18,0]] },
-  { shortName: "圆环", name: "进阶：中心与外圈", target: 0.86, maxRounds: 14, startRate: 0.05, startEpochs: 5, description: "初始反向传播信号太弱。调整学习率和每批轮数，在预算内让隐藏神经元围出中心。", points: [[-0.12,-0.08,1],[0.08,0.04,1],[-0.02,0.18,1],[0.16,-0.16,1],[-0.22,0.08,1],[0.22,0.2,1],[-0.84,0.02,0],[-0.58,0.58,0],[0.02,0.84,0],[0.62,0.56,0],[0.86,-0.04,0],[0.52,-0.64,0],[-0.08,-0.86,0],[-0.62,-0.54,0]] },
-  { shortName: "弯月", name: "挑战：弯月边界", target: 0.82, maxRounds: 3, startRate: 0.05, startEpochs: 5, description: "初始批次无法及时弯曲边界。你只有少量决策机会，需要提高每批训练的有效强度。", points: [[-0.82,0.12,1],[-0.66,0.34,1],[-0.42,0.46,1],[-0.12,0.48,1],[0.16,0.38,1],[0.42,0.18,1],[0.66,-0.04,1],[-0.62,-0.42,0],[-0.34,-0.58,0],[-0.04,-0.62,0],[0.26,-0.52,0],[0.52,-0.34,0],[0.76,-0.12,0],[0.1,-0.08,0]] },
+  { shortName: "圆环", name: "进阶：中心与外圈", target: 0.90, maxRounds: 14, startRate: 0.05, startEpochs: 5, description: "让中心与外圈分开。比较每批损失，用有限的更新次数找到合适的学习率。", points: [[-0.12,-0.08,1],[0.08,0.04,1],[-0.02,0.18,1],[0.16,-0.16,1],[-0.22,0.08,1],[0.22,0.2,1],[-0.84,0.02,0],[-0.58,0.58,0],[0.02,0.84,0],[0.62,0.56,0],[0.86,-0.04,0],[0.52,-0.64,0],[-0.08,-0.86,0],[-0.62,-0.54,0]] },
+  { shortName: "弯月", name: "挑战：弯月边界", target: 0.92, maxRounds: 3, startRate: 0.05, startEpochs: 5, description: "两组样本像交错的弯月。预算不多，先观察边界，再调整步幅。", points: [[-0.82,0.12,1],[-0.66,0.34,1],[-0.42,0.46,1],[-0.12,0.48,1],[0.16,0.38,1],[0.42,0.18,1],[0.66,-0.04,1],[-0.62,-0.42,0],[-0.34,-0.58,0],[-0.04,-0.62,0],[0.26,-0.52,0],[0.52,-0.34,0],[0.76,-0.12,0],[0.1,-0.08,0]] },
 ];
 
 let levelIndex = 0;
@@ -64,10 +67,10 @@ function hardestPointIndex() {
   return modelMath.hardestPointIndex(state.points, state.net);
 }
 
-function resetGame() {
+function resetGame(keepParameters = false) {
   const level = levels[levelIndex];
-  learningRate.value = level.startRate;
-  epochsPerStep.value = level.startEpochs;
+  if (!keepParameters) learningRate.value = level.startRate;
+  if (!keepParameters) epochsPerStep.value = level.startEpochs;
   state = { points: level.points.map(([x, y, label]) => ({ x, y, label })), net: makeNet(), round: 0, best: 0, lossHistory: [], signalPointIndex: 0 };
   modelVersion += 1;
   missionText.textContent = `${level.description} 本关训练预算：${level.maxRounds} 批。`;
@@ -92,7 +95,9 @@ function trainStep() {
     updateHud();
     return;
   }
-  history.push({ net: cloneNet(state.net), round: state.round, best: state.best });
+  const previousWork = state.work || 0;
+  if (!runtime.spendWork(state, stepWork(), workLimits[levelIndex])) { controller.stopAuto(); return; }
+  history.push({ work: previousWork, net: cloneNet(state.net), round: state.round, best: state.best });
   const lr = Number(learningRate.value);
   state.net = modelMath.train(state.points, state.net, lr, Number(epochsPerStep.value));
   modelVersion += 1;
@@ -126,6 +131,7 @@ function undo() {
     toast.textContent = "还没有可以撤回的训练批次。";
     return;
   }
+  state.work = previous.work;
   state.net = previous.net;
   state.round = previous.round;
   state.best = previous.best;
@@ -139,10 +145,12 @@ function undo() {
 }
 
 function updateHud() {
+  runtime.setOutcome(state.round > 0 && metrics().score >= levels[levelIndex].target);
+  runtime.setWorkBudget(state.work || 0, workLimits[levelIndex], stepWork());
   const result = metrics();
   state.best = Math.max(state.best, result.score);
   const norm = Math.sqrt(state.net.h.reduce((sum, unit) => sum + unit.wx ** 2 + unit.wy ** 2 + unit.v ** 2, 0));
-  runtime.setText(scoreValue, result.score.toFixed(2));
+  runtime.setText(scoreValue, runtime.formatGoalMetric(result.score));
   runtime.setText(roundValue, state.round);
   runtime.setText(targetLabel, `目标 ${levels[levelIndex].target.toFixed(2)} · 预算 ${levels[levelIndex].maxRounds} 批`);
   runtime.setProgress(progressFill, result.score / levels[levelIndex].target);
@@ -166,6 +174,13 @@ function setView(next) {
 
 function layout() {
   const rect = canvas.getBoundingClientRect();
+  if (rect.width < 600) {
+    const plotHeight = Math.max(200, rect.height * 0.45);
+    return {
+      ...plane.bounds({ width: rect.width, height: plotHeight }),
+      panel: { x: 4, y: plotHeight + 12, w: rect.width - 10, h: rect.height - plotHeight - 22 },
+    };
+  }
   const compact = rect.width < 760;
   const panelWidth = compact
     ? Math.min(260, Math.max(190, rect.width * 0.42))
@@ -270,7 +285,7 @@ function drawNetworkPanel(panel) {
   ctx.strokeStyle = "#fff3d6";
   ctx.lineWidth = 3;
   ctx.strokeRect(panel.x + 0.5, panel.y + 0.5, panel.w - 1, panel.h - 1);
-  ctx.font = "12px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "12px 'Arcade Pixel', monospace";
   ctx.fillStyle = "#fff3d6";
   if (!compactPanel) ctx.fillText("2-4-1 NETWORK", panel.x + 12, panel.y + 18);
   ctx.fillStyle = "rgba(255,243,214,0.72)";
@@ -336,7 +351,7 @@ function drawWeightLine(x1, y1, x2, y2, weight, label, labelOptions = {}) {
 function drawWeightLabels(labels, panel, blockers) {
   const placed = [...blockers];
   ctx.save();
-  ctx.font = "10px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "10px 'Arcade Pixel', monospace";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   labels
@@ -366,7 +381,7 @@ function drawWeightLabels(labels, panel, blockers) {
 function drawWeightLabel(item, rect) {
   if (!rect.w || !rect.h) {
     ctx.fillStyle = item.color;
-    ctx.font = "10px Courier New, Microsoft YaHei, monospace";
+    ctx.font = "10px 'Arcade Pixel', monospace";
     ctx.fillText(item.label, item.x, item.y);
     return;
   }
@@ -412,7 +427,7 @@ function drawNode(x, y, r, activation, name, value, color) {
   ctx.lineWidth = 3;
   ctx.strokeRect(x - r, y - r, r * 2, r * 2);
   ctx.fillStyle = "#fff3d6";
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.textAlign = "center";
   ctx.fillText(name, x, y - r - 7);
   ctx.fillText(value, x, y + 4);
@@ -433,7 +448,7 @@ function drawErrorRing(x, y, error) {
   ctx.lineWidth = 2 + strength * 8;
   ctx.strokeRect(x - 28, y - 28, 56, 56);
   ctx.fillStyle = ctx.strokeStyle;
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.textAlign = "center";
   ctx.fillText(`err ${signed(error)}`, x, y + 42);
   ctx.textAlign = "left";
@@ -455,7 +470,7 @@ function drawBackpropArrow(x1, y1, x2, y2, error) {
   ctx.lineTo(x2 + 10, y2 + 6);
   ctx.closePath();
   ctx.fill();
-  ctx.font = "11px Courier New, Microsoft YaHei, monospace";
+  ctx.font = "11px 'Arcade Pixel', monospace";
   const label = "backprop error";
   const metrics = ctx.measureText(label);
   const width = Math.ceil((metrics && metrics.width) || label.length * 7) + 8;
