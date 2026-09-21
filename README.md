@@ -1,5 +1,7 @@
 # AI Training Arcade 👾
 
+> 🎮 **[立即在线游玩 AI Training Arcade](https://ghost-aku.github.io/ai-training-arcade/)**
+
 **AI Training Arcade** 是一个开源的交互式人工智能学习街机厅。
 
 它不是一个算法展示页面，而是一系列可玩的训练场：玩家通过调整参数、观察模型行为、管理计算预算，在关卡中理解人工智能算法为什么成功、为什么失败。
