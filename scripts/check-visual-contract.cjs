@@ -71,6 +71,8 @@ assert(css.includes('html[data-theme="light"]'), "styles: missing global light t
 assert(css.includes(".theme-toggle"), "styles: missing global theme toggle styling");
 assert(css.includes("--ui-accent"), "styles: UI accent must be separate from model-positive green");
 assert(!css.includes("radial-gradient") && !css.includes("decor-glow"), "styles: no decorative color glows");
+assert(!/body::before\s*\{/.test(css), "styles: never place scanlines over the full page");
+assert(/\.lab-grid span\s*\{[^}]*display:\s*block/.test(css), "home: arcade card labels must stay visible");
 assert(css.includes("prefers-reduced-motion"), "styles: missing reduced-motion support");
 assert(css.includes("overflow-x: hidden"), "styles: sidebar must never expose a horizontal scrollbar");
 assert(css.includes("grid-auto-rows: max-content"), "styles: scrollable sidebar cards must keep their content height");
@@ -100,6 +102,7 @@ assert(!runtime.includes("setInterval(step"), "runtime: auto training must not u
 const bootstrap = fs.readFileSync("core/bootstrap.js", "utf8");
 assert(bootstrap.includes("definition.model") && bootstrap.includes("definition.lab"), "bootstrap: model/lab loading must come from manifest");
 assert(bootstrap.includes("./models/model-core.js"), "bootstrap: shared model core must load before model adapters");
+assert(runtime.includes('textContent: "👾 ML ARCADE"'), "navigation: restore the pixel arcade mascot");
 
 const treeModel = fs.readFileSync("models/tree-model.js", "utf8");
 const forestModel = fs.readFileSync("models/forest-model.js", "utf8");
