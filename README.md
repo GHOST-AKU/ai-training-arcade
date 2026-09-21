@@ -53,7 +53,7 @@
 ## 本地运行
 
 ```bash
-python -m http.server 4173
+python -m http.server 4173 --bind 127.0.0.1
 ```
 
 打开：
@@ -85,6 +85,6 @@ npm run benchmark
 
 本项目采用 **GNU General Public License v3.0 (GPL-3.0)** 发布。
 
-修改后的分发版本必须继续遵循 GPL-3.0（或项目许可证明确允许的后续版本）。
+修改后的分发版本必须继续遵循 GPL-3.0。
 
 GPL-3.0 © 2026 GHOST-AKU
