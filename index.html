@@ -61,18 +61,6 @@
           <small>并联：多棵树独立学习，再多数投票抗噪声。</small>
         </a>
       </nav>
-      <section class="ensemble-compare" aria-label="集成模型对照">
-        <a href="./gbm.html">
-          <span>Serial Boosting</span>
-          <strong>GBM：串联补错</strong>
-          <small>第 m 棵弱树专门追上一轮没解释掉的残差，模型一步步叠加。</small>
-        </a>
-        <a href="./forest.html">
-          <span>Parallel Voting</span>
-          <strong>随机森林：并联投票</strong>
-          <small>很多树各看一份随机样本和特征，最后用多数票抵消单棵树的偏差。</small>
-        </a>
-      </section>
     </main>
     <script src="./core/lab-manifest.js"></script>
     <script src="./core/bootstrap.js"></script>

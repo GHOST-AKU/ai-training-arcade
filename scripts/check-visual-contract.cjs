@@ -26,6 +26,10 @@ const index = fs.readFileSync("index.html", "utf8");
 assert(index.includes('data-lab="home"'), "index: body must identify the home route");
 assert.deepStrictEqual(scriptsIn(index), sharedScripts, "index: script assembly must use only manifest + bootstrap");
 assert(!/[?&]v=\d+/.test(index), "index: manual cache versions are forbidden");
+labs.forEach((definition) => {
+  const occurrences = index.split(`href="${definition.href}"`).length - 1;
+  assert.strictEqual(occurrences, 1, `index: ${definition.id} must appear exactly once in the game list`);
+});
 
 labs.forEach((definition) => {
   assert(definition.model === `./models/${definition.id}-model.js`, `${definition.id}: model path must follow convention`);
