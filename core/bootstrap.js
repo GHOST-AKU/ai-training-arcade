@@ -3,12 +3,18 @@
 
   const document = global.document;
   const manifest = global.LabManifest;
+  const ASSET_VERSION = "20260921-1";
   if (!document || !manifest) throw new Error("bootstrap.js requires lab-manifest.js");
+
+  function versionAsset(source) {
+    const separator = source.includes("?") ? "&" : "?";
+    return `${source}${separator}v=${ASSET_VERSION}`;
+  }
 
   function loadScripts(sources) {
     return Promise.all(sources.map((source) => new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = source;
+      script.src = versionAsset(source);
       script.async = false;
       script.addEventListener("load", resolve, { once: true });
       script.addEventListener("error", () => reject(new Error(`Unable to load ${source}`)), { once: true });
