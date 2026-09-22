@@ -1,5 +1,5 @@
 // DOM and event tests only. No screenshots, raster inspection or visual recognition.
-// Run with: NODE_PATH=/path/to/jsdom/node_modules node scripts/dom-qa.cjs
+// Run with: NODE_PATH=/path/to/jsdom/node_modules node tests/browser/dom-qa.cjs
 const assert = require('assert');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const base = process.env.QA_URL || 'http://127.0.0.1:4173';

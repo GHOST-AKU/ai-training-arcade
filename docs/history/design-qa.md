@@ -1,5 +1,7 @@
 # 神经网络训练场设计 QA
 
+> 历史记录：描述当时的实现与验收，不代表当前版本。临时截图路径可能已失效；其中竖屏限制已被后续修复取消，见 [玩法与界面修复记录](repair-notes.md)。文内原始路径保留作历史证据；当前规范见 [可视化语言](../design/VISUAL_LANGUAGE.md)。
+
 - source visual truth path: `C:/Users/GHOST_~1/AppData/Local/Temp/codex-clipboard-c9d23f56-20d1-471f-9fb8-b9418cbb3ee3.png`
 - supporting reference path: `C:/Users/GHOST_~1/AppData/Local/Temp/codex-clipboard-affc74aa-774c-4baf-b871-3d9824d392d2.png`
 - implementation screenshot path: `output/design-qa/nn-1920x852.png`

@@ -6,13 +6,13 @@
   "scripts": {
     "serve": "node scripts/serve.cjs",
     "check": "node scripts/check-js.cjs",
-    "visual:check": "node scripts/check-visual-contract.cjs",
-    "difficulty": "node scripts/check-gbm-difficulty.cjs && node scripts/check-other-difficulty.cjs",
-    "smoke": "node scripts/smoke-models.cjs && node scripts/smoke-labs.cjs",
-    "benchmark": "node scripts/benchmark-models.cjs",
+    "visual:check": "node tests/contracts/check-visual-contract.cjs",
+    "difficulty": "node tests/gameplay/check-gbm-difficulty.cjs && node tests/gameplay/check-other-difficulty.cjs",
+    "smoke": "node tests/smoke/smoke-models.cjs && node tests/smoke/smoke-labs.cjs",
+    "benchmark": "node benchmarks/benchmark-models.cjs",
     "test": "npm run check && npm run visual:check && npm run difficulty && npm run playability && npm run i18n:check && npm run smoke",
-    "playability": "node scripts/check-playability.cjs",
-    "i18n:check": "node scripts/check-i18n.cjs",
-    "qa:dom": "node scripts/dom-qa.cjs"
+    "playability": "node tests/gameplay/check-playability.cjs",
+    "i18n:check": "node tests/contracts/check-i18n.cjs",
+    "qa:dom": "node tests/browser/dom-qa.cjs"
   }
 }

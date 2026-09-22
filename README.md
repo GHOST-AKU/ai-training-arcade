@@ -54,6 +54,10 @@
 
 ## 本地运行
 
+开发者先阅读 [文档导航](docs/README.md)、[项目结构](docs/ARCHITECTURE.md)和[开发与验证](docs/DEVELOPMENT.md)。当前工作状态见 [项目快照](docs/project/STATE_SNAPSHOT.md)。
+
+项目无需构建或安装依赖。也可以使用 `npm run serve` 启动本地服务器。
+
 ```bash
 python -m http.server 4173 --bind 127.0.0.1
 ```
