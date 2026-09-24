@@ -1,0 +1,74 @@
+/* Portal-only layout. Game styles remain in styles.css. */
+.portal-page .lab-switch { max-width: none; padding-inline: max(24px, calc((100vw - 1280px) / 2)); }
+.portal-page .lab-select { display: none; }
+.portal-skip { position: absolute; left: 24px; top: -100px; z-index: 10; padding: 12px; background: var(--surface); }
+.portal-skip:focus { top: 12px; }
+.portal-shell { max-width: 1280px; margin: auto; padding: 64px 24px 28px; }
+.portal-hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding-bottom: 54px; }
+.portal-kicker { color: var(--accent); font-size: 12px; letter-spacing: 2px; margin-bottom: 22px; }
+.portal-hero h1 { font-size: clamp(38px, 5.4vw, 72px); line-height: 1.18; letter-spacing: -1px; margin-bottom: 24px; }
+.portal-hero h1 span { color: var(--accent); }
+.portal-description { max-width: 600px; color: var(--muted); font-size: 17px; line-height: 1.85; margin-bottom: 0; }
+.portal-token { color: var(--accent); background: var(--surface); border: 3px solid var(--border); box-shadow: 8px 8px 0 var(--pixel-shadow); padding: 22px 28px; text-align: center; transform: rotate(3deg); }
+.portal-token svg { display: block; width: 120px; max-width: 100%; margin: 20px auto; }
+.portal-token span { display: block; font-size: 10px; letter-spacing: 1px; }
+.portal-token span:last-child { border-top: 2px dashed var(--border); padding-top: 14px; color: var(--muted); }
+.portal-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; border-bottom: 2px solid var(--border); padding-bottom: 14px; margin-bottom: 24px; }
+.portal-section-heading h2 { font-size: 20px; font-weight: 400; margin: 0; }
+.portal-section-heading > span { color: var(--faint); font-size: 11px; letter-spacing: 1px; }
+.world-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 22px; align-items: stretch; }
+.world-card { --world-color: var(--accent); min-width: 0; display: flex; flex-direction: column; padding: 24px; border: 2px solid var(--border); border-top: 5px solid var(--world-color); background: var(--surface); }
+.world-open { color: var(--ink); text-decoration: none; box-shadow: 6px 6px 0 var(--pixel-shadow); transition: transform .12s ease, box-shadow .12s ease; }
+.world-open:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 6px 10px 0 var(--pixel-shadow); }
+.world-open:active { transform: translateY(0); box-shadow: 2px 2px 0 var(--pixel-shadow); }
+.world-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 11px; letter-spacing: 1px; color: var(--faint); margin-bottom: 28px; }
+.world-status { border: 1px solid var(--world-color); color: var(--world-color); padding: 3px 8px; letter-spacing: 0; }
+.status-open { background: var(--accent); color: var(--bg); }
+.world-art { margin: 0 0 30px; }
+.world-art svg { display: block; width: 100%; }
+.world-art > span { display: block; margin-top: 10px; font-size: 10px; letter-spacing: 1px; color: var(--faint); }
+.diagram-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 6; }
+.diagram-axis { stroke: var(--faint); stroke-width: 2; }
+.diagram-fit { stroke: var(--accent); stroke-width: 4; }
+.diagram-points { fill: var(--ui-accent); }
+.world-copy { flex: 1; }
+.world-english { color: var(--world-color); font-size: 11px; letter-spacing: 1px; margin-bottom: 10px; overflow-wrap: anywhere; }
+.world-copy h3 { font-size: 30px; font-weight: 400; line-height: 1.2; margin: 0 0 16px; }
+.world-copy > p:last-child { color: var(--muted); font-size: 14px; line-height: 1.85; margin-bottom: 26px; }
+.world-entry { border-top: 1px solid var(--border); padding-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+.world-entry > span { color: var(--muted); font-size: 12px; }
+.world-entry strong { display: flex; justify-content: space-between; align-items: center; background: var(--accent); color: var(--bg); padding: 12px 14px; font-weight: 400; font-size: 17px; }
+.world-entry strong > span:last-child { font-size: 25px; line-height: 1; }
+.world-deep { --world-color: var(--violet); }
+.world-rl { --world-color: var(--accent-2); }
+.world-mini-art { color: var(--world-color); font-size: 30px; letter-spacing: 3px; margin: 12px 0 32px; white-space: nowrap; }
+.world-planned { display: grid; gap: 8px; padding-top: 18px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--muted); }
+.world-planned > span:first-child { color: var(--faint); }
+.world-unavailable { margin: 24px 0 0; font-size: 13px; color: var(--world-color); }
+.portal-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 34px; padding-top: 20px; color: var(--faint); font-size: 12px; }
+.portal-footer > span:last-child { letter-spacing: 1px; }
+@media (max-width: 1000px) {
+  .world-grid { grid-template-columns: 1fr 1fr; }
+  .world-open { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; }
+  .world-open .world-meta { grid-column: 1 / -1; }
+  .world-art { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+  .world-open .world-copy,.world-open .world-entry { grid-column: 2; }
+}
+@media (max-width: 640px) {
+  .portal-shell { padding: 36px 18px 24px; }
+  .portal-page .lab-switch { padding-inline: 14px; }
+  .portal-hero { grid-template-columns: 1fr; gap: 24px; padding-bottom: 34px; }
+  .portal-token { display: none; }
+  .portal-kicker { font-size: 10px; letter-spacing: 1px; }
+  .portal-description { font-size: 15px; }
+  .portal-section-heading { align-items: start; flex-direction: column; gap: 8px; }
+  .world-grid { grid-template-columns: 1fr; gap: 20px; }
+  .world-open { grid-column: auto; display: flex; }
+  .world-card { padding: 22px; }
+  .world-art { width: 100%; margin-bottom: 24px; }
+  .world-mini-art { margin: 0 0 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-open { transition: none; }
+  .world-open:hover,.world-open:active { transform: none; }
+}

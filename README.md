@@ -115,6 +115,10 @@ Some legacy standalone training-ground files remain while the project architectu
 
 Clone the repository and start a local HTTP server:
 
+开发者先阅读 [文档导航](docs/README.md)、[项目结构](docs/ARCHITECTURE.md)和[开发与验证](docs/DEVELOPMENT.md)。当前工作状态见 [项目快照](docs/project/STATE_SNAPSHOT.md)。
+
+项目无需构建或安装依赖。也可以使用 `npm run serve` 启动本地服务器。
+
 ```bash
 python -m http.server 4173 --bind 127.0.0.1
 ```
@@ -154,7 +158,9 @@ npm run benchmark
 
 AI Training Arcade has a shared visual language for keeping its training grounds coherent.
 
-See [`VISUAL_LANGUAGE.md`](VISUAL_LANGUAGE.md) for the project's visual guidelines.
+See [`docs/design/VISUAL_LANGUAGE.md`](docs/design/VISUAL_LANGUAGE.md) for the project's visual guidelines.
+
+Developers can start with the [documentation index](docs/README.md), [architecture guide](docs/ARCHITECTURE.md), and [development guide](docs/DEVELOPMENT.md). Current project status is recorded in the [project snapshot](docs/project/STATE_SNAPSHOT.md).
 
 ---
 

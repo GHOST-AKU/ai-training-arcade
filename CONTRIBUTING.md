@@ -2,6 +2,8 @@
 
 感谢参与 AI Training Arcade。
 
+开始前阅读[项目结构](docs/ARCHITECTURE.md)、[开发与验证](docs/DEVELOPMENT.md)及[可视化语言](docs/design/VISUAL_LANGUAGE.md)。测试放在 `tests/`，性能基准放在 `benchmarks/`，开发工具放在 `scripts/`。
+
 ## 新增训练场
 
 一个新的训练场应该包含：

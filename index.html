@@ -5,64 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Training Arcade</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260921-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260922-1" />
+    <link rel="stylesheet" href="./styles/home.css?v=20260922-1" />
   </head>
-  <body class="home-page" data-lab="home">
+  <body class="home-page portal-page" data-lab="home">
+    <a class="portal-skip" href="#worlds">选择板块</a>
     <nav class="lab-switch" aria-label="切换训练场"></nav>
-    <main class="home-shell">
-      <section class="home-hero" aria-label="训练场大厅">
-        <div class="home-mascot" aria-hidden="true">👾</div>
-        <p class="eyebrow">Interactive AI Learning Arcade</p>
-        <h1>AI Training Arcade</h1>
-        <p>观察数据，调整参数，在预算内完成目标。八种算法，从一条直线开始。</p>
+    <main class="portal-shell">
+      <header class="portal-hero">
+        <div>
+          <p class="portal-kicker">AI TRAINING ARCADE / SELECT YOUR WORLD</p>
+          <h1>把好奇心，<br /><span>变成下一步。</span></h1>
+          <p class="portal-description">一座可以玩的 AI 街机厅。调整、尝试、观察，让抽象的算法成为你亲手通关的挑战。</p>
+        </div>
+        <div class="portal-token" aria-hidden="true">
+          <span>INSERT CURIOSITY</span>
+          <svg viewBox="0 0 120 100" fill="currentColor"><path d="M30 10h10v10H30zm50 0h10v10H80zM40 20h40v10H40zM20 30h80v10H20zM10 40h100v30H10zM0 50h10v30H0zm110 0h10v30h-10zM20 70h20v10H20zm60 0h20v10H80zM30 80h20v10H30zm40 0h20v10H70z"/><path fill="var(--surface)" d="M30 40h10v10H30zm50 0h10v10H80z"/></svg>
+          <span>LEARN BY PLAYING</span>
+        </div>
+      </header>
+      <section id="worlds" aria-labelledby="worlds-title">
+        <div class="portal-section-heading"><h2 id="worlds-title">选择你的探索方向</h2><span>01 OPEN / 02 BUILDING</span></div>
+        <div class="world-grid">
+          <a class="world-card world-open" href="./machine-learning.html" aria-labelledby="ml-title ml-action">
+            <div class="world-meta"><span>WORLD 01</span><span class="world-status status-open">已开放</span></div>
+            <div class="world-art" aria-hidden="true">
+              <svg viewBox="0 0 440 180" fill="none">
+                <path class="diagram-grid" d="M20 40h400M20 90h400M20 140h400M70 15v150M170 15v150M270 15v150M370 15v150"/>
+                <path class="diagram-axis" d="M20 10v155h400"/>
+                <path class="diagram-fit" d="m38 142 360-108"/>
+                <path class="diagram-points" d="M60 122h9v9h-9zm36 7h9v9h-9zm34-36h9v9h-9zm45 3h9v9h-9zm38-30h9v9h-9zm39 10h9v9h-9zm39-37h9v9h-9zm41 14h9v9h-9zm39-33h9v9h-9z"/>
+              </svg>
+              <span>DATA → PATTERN → DISCOVERY</span>
+            </div>
+            <div class="world-copy"><p class="world-english">MACHINE LEARNING</p><h3 id="ml-title">机器学习</h3><p>从一条直线到一片森林。找出数据中的规律，训练你的第一个模型。</p></div>
+            <div class="world-entry"><span>8 个训练场 · 26 个关卡</span><strong id="ml-action"><span>进入板块</span><span aria-hidden="true">↗</span></strong></div>
+          </a>
+          <article class="world-card world-building world-deep" aria-labelledby="dl-title">
+            <div class="world-meta"><span>WORLD 02</span><span class="world-status">施工中</span></div>
+            <div class="world-copy"><div class="world-mini-art" aria-hidden="true">◻ ─ ◇ ─ ◻</div><p class="world-english">DEEP LEARNING</p><h3 id="dl-title">深度学习</h3><p>让层与层连接，让特征逐渐浮现。探索神经网络如何理解复杂世界。</p></div>
+            <div class="world-planned"><span>规划方向</span><span>CNN / Attention / Transformer</span></div>
+            <p class="world-unavailable">正在建造，暂未开放</p>
+          </article>
+          <article class="world-card world-building world-rl" aria-labelledby="rl-title">
+            <div class="world-meta"><span>WORLD 03</span><span class="world-status">施工中</span></div>
+            <div class="world-copy"><div class="world-mini-art" aria-hidden="true">⌖ · · → ⚑</div><p class="world-english">REINFORCEMENT LEARNING</p><h3 id="rl-title">强化学习</h3><p>每一步都是选择。在尝试与奖励之间，学会走出自己的路线。</p></div>
+            <div class="world-planned"><span>规划方向</span><span>Grid World / Q-Learning</span></div>
+            <p class="world-unavailable">正在建造，暂未开放</p>
+          </article>
+        </div>
       </section>
-
-
-
-      <nav class="lab-grid" aria-label="选择训练场">
-        <a href="./gbm.html" data-icon="↗">
-          <span>Boost Lab</span>
-          <strong>GBM 梯度提升机</strong>
-          <small>串联：下一棵树专门补上一轮的残差。</small>
-        </a>
-        <a href="./svm.html" data-icon="↔">
-          <span>SVM Arcade</span>
-          <strong>SVM 最大间隔</strong>
-          <small>把边界推到两类之间。</small>
-        </a>
-        <a href="./kmeans.html" data-icon="✦">
-          <span>Cluster Arcade</span>
-          <strong>K-Means 聚类</strong>
-          <small>找出分组，把质心放到合适的位置。</small>
-        </a>
-        <a href="./tree.html" data-icon="Y">
-          <span>Tree Split Lab</span>
-          <strong>决策树</strong>
-          <small>观察两类样本，决定在哪里切。</small>
-        </a>
-        <a href="./linear.html" data-icon="╱">
-          <span>Line Fit Lab</span>
-          <strong>线性回归</strong>
-          <small>让直线压低残差平方。</small>
-        </a>
-        <a href="./logistic.html" data-icon="S">
-          <span>Sigmoid Gate</span>
-          <strong>逻辑回归</strong>
-          <small>用概率边界完成分类。</small>
-        </a>
-        <a href="./nn.html" data-icon="●">
-          <span>Neural Circuit</span>
-          <strong>神经网络</strong>
-          <small>组合隐藏特征，学出弯曲边界。</small>
-        </a>
-        <a href="./forest.html" data-icon="♣">
-          <span>Forest Vote</span>
-          <strong>随机森林</strong>
-          <small>并联：多棵树独立学习，再多数投票抗噪声。</small>
-        </a>
-      </nav>
+      <footer class="portal-footer"><span>不必先懂所有原理，从一次尝试开始。</span><span>AI TRAINING ARCADE ✦</span></footer>
     </main>
-    <script src="./core/lab-manifest.js?v=20260921-1"></script>
-    <script src="./core/bootstrap.js?v=20260921-1"></script>
+    <script src="./core/lab-manifest.js?v=20260922-1"></script>
+    <script src="./core/bootstrap.js?v=20260922-1"></script>
   </body>
 </html>

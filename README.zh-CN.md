@@ -88,6 +88,8 @@ AI Training Arcade 想再往前走一步。
 
 AI Training Arcade 正在从一系列独立实验，逐渐发展成拥有共享基础设施的街机平台。
 
+开发者可以从[文档导航](docs/README.md)、[项目结构](docs/ARCHITECTURE.md)和[开发与验证](docs/DEVELOPMENT.md)开始；当前工作状态见[项目快照](docs/project/STATE_SNAPSHOT.md)。
+
 ```text
 ai-training-arcade/
 ├── assets/          # 公共视觉资源
@@ -156,7 +158,7 @@ npm run benchmark
 
 AI Training Arcade 使用统一的视觉语言，让不同训练场保持整体一致。
 
-具体规范请参阅 [`VISUAL_LANGUAGE.md`](VISUAL_LANGUAGE.md)。
+具体规范请参阅 [`docs/design/VISUAL_LANGUAGE.md`](docs/design/VISUAL_LANGUAGE.md)。
 
 ---
 

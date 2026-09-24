@@ -1,7 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const vm = require('vm');
-const { createGame, loadManifest, moveToLevel, play, playTree } = require('./game-harness.cjs');
+const { createGame, loadManifest, moveToLevel, play, playTree } = require('../support/game-harness.cjs');
 
 function ranges(id) {
   return [...fs.readFileSync(`${id}.html`, 'utf8').matchAll(/<input id="([^"]+)" type="range" min="([^"]+)" max="([^"]+)" value="[^"]+" step="([^"]+)"/g)]
@@ -110,8 +110,8 @@ for (const id of ['gbm', 'linear', 'nn', 'forest']) {
 }
 for (const row of report) console.log(`${row.lab} L${row.level}: ${row.wins ?? 'manual'}/${row.trials ?? 'witness'}; maximum settings ${row.maxClears ?? 'n/a'}`);
 if (process.argv.includes('--report')) {
-  fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync('docs/playability-report.json', JSON.stringify({ methodology: 'Deterministic on-grid parameter sampling, plus witnessed solutions for all 26 levels. Not human playtest statistics.', results: report }, null, 2) + '\n');
+  fs.mkdirSync('docs/reports', { recursive: true });
+  fs.writeFileSync('docs/reports/playability-report.json', JSON.stringify({ methodology: 'Deterministic on-grid parameter sampling, plus witnessed solutions for all 26 levels. Not human playtest statistics.', results: report }, null, 2) + '\n');
 }
 console.log('26 levels reachable; retry, undo, budgets and parameter-space checks passed.');
 // Geometry-only checks for the two split canvases. No image rendering.

@@ -3,7 +3,7 @@
 
   const document = global.document;
   const manifest = global.LabManifest;
-  const ASSET_VERSION = "20260921-1";
+  const ASSET_VERSION = "20260922-1";
   if (!document || !manifest) throw new Error("bootstrap.js requires lab-manifest.js");
 
   function versionAsset(source) {

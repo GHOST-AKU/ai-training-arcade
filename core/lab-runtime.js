@@ -52,14 +52,15 @@
 
   function renderNavigation(container = query(".lab-switch"), activeId = inferLabId()) {
     if (!container) return;
-    const home = makeElement("a", { href: "./index.html", className: "brand-lockup", textContent: "👾 ML ARCADE" });
+    const home = makeElement("a", { href: "./index.html", className: "brand-lockup", textContent: "👾 AI ARCADE" });
+    const section = makeElement("a", { href: "./machine-learning.html", className: "section-link", textContent: "机器学习" });
     const select = makeElement("select", { className: "lab-select", attributes: { "aria-label": "切换训练场" } });
     LABS.forEach((lab) => {
       const option = makeElement("option", { value: lab.href, textContent: lab.label, selected: lab.id === activeId });
       select.append?.(option);
     });
     select.addEventListener("change", () => { global.location.href = select.value; });
-    replaceChildren(container, [home, select].filter(Boolean));
+    replaceChildren(container, [home, section, select].filter(Boolean));
     if (container.dataset) container.dataset.labNav = activeId;
   }
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>决策树训练场</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260921-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260922-1" />
   </head>
   <body class="tree-page" data-lab="tree">
     <nav class="lab-switch" aria-label="切换训练场"></nav>
@@ -30,7 +30,10 @@
           </div>
         </div>
 
-        <div id="toast" class="toast" role="status">先观察最混乱的叶子，再选择切分线。</div>
+        <div class="training-feedback">
+          <span class="feedback-label" id="feedbackLabel">训练反馈</span>
+          <div id="toast" class="toast" role="status" aria-labelledby="feedbackLabel" aria-atomic="true">先观察最混乱的叶子，再选择切分线。</div>
+        </div>
 
         <section class="panel-block view-card">
           <h2>观察方式</h2>
@@ -129,7 +132,7 @@
       </aside>
     </main>
 
-    <script src="./core/lab-manifest.js?v=20260921-1"></script>
-    <script src="./core/bootstrap.js?v=20260921-1"></script>
+    <script src="./core/lab-manifest.js?v=20260922-1"></script>
+    <script src="./core/bootstrap.js?v=20260922-1"></script>
   </body>
 </html>

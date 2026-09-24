@@ -345,9 +345,10 @@ function drawForestPanel(panel) {
     drawEmptyGrove(panel);
     return;
   }
-  drawTreeGrove(panel);
-  drawVoteBoard(panel);
-  drawStabilityChart(panel);
+  const groveBottom = drawTreeGrove(panel);
+  // Wide panels stack sections by their actual content height, not independent offsets.
+  const voteBottom = drawVoteBoard(panel, panel.height >= 300 ? groveBottom + 24 : undefined);
+  drawStabilityChart(panel, panel.height >= 300 ? voteBottom + 28 : undefined);
 }
 
 function drawEmptyGrove(panel) {
@@ -380,7 +381,9 @@ function drawTreeGrove(panel) {
   const focus = focusPoint();
   const cols = Math.max(4, Math.floor((panel.width - 22) / 42));
   const size = Math.min(34, Math.floor((panel.width - 28) / cols) - 4);
-  const rows = panel.height < 300 ? 1 : 3;
+  // Reserve room for the two captions, vote board and stability chart.
+  const maxRows = panel.height < 300 ? 1 : Math.max(1, Math.min(3, Math.floor((panel.height - 280) / (size + 12))));
+  const rows = Math.min(maxRows, Math.ceil(state.trees.length / cols));
   const startX = panel.left + 12;
   const startY = panel.top + 56;
   const visible = state.trees.slice(-Math.min(state.trees.length, cols * rows));
@@ -400,12 +403,13 @@ function drawTreeGrove(panel) {
   ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(`latest bag: ${new Set(bag).size}/${state.points.length} unique`, panel.left + 12, startY + rows * (size + 12) + 12);
   ctx.fillText(`split flavor: ${latest.stats.xSplits}x / ${latest.stats.ySplits}y`, panel.left + 12, startY + rows * (size + 12) + 28);
+  return startY + rows * (size + 12) + 28;
 }
 
-function drawVoteBoard(panel) {
+function drawVoteBoard(panel, contentTop) {
   const focus = focusPoint();
   const details = voteDetails(focus);
-  const top = panel.top + (panel.height < 300 ? 145 : Math.min(232, panel.height * 0.48));
+  const top = contentTop ?? panel.top + (panel.height < 300 ? 145 : Math.min(232, panel.height * 0.48));
   ctx.fillStyle = "#fff3d6";
   ctx.font = "bold 12px 'Arcade Pixel', monospace";
   ctx.fillText(`vote probe #${focus.index + 1}`, panel.left + 12, top);
@@ -425,13 +429,15 @@ function drawVoteBoard(panel) {
   ctx.fillStyle = "rgba(255,243,214,0.72)";
   ctx.font = "11px 'Arcade Pixel', monospace";
   ctx.fillText(`yes ${details.positive} / no ${details.negative} / margin ${Math.round(details.margin * 100)}%`, barX, barY + 31);
+  return barY + 31;
 }
 
-function drawStabilityChart(panel) {
+function drawStabilityChart(panel, minimumTop) {
   const trend = stabilityTrend();
   if (!trend.length) return;
   const compact = panel.height < 300;
-  const chart = { x: panel.left + 12, y: panel.bottom - (compact ? 72 : 104), w: panel.width - 26, h: compact ? 42 : 70 };
+  const chartY = Math.max(panel.bottom - (compact ? 72 : 104), minimumTop ?? panel.top);
+  const chart = { x: panel.left + 12, y: chartY, w: panel.width - 26, h: Math.min(compact ? 42 : 70, panel.bottom - 30 - chartY) };
   ctx.fillStyle = "#fff3d6";
   ctx.font = "bold 12px 'Arcade Pixel', monospace";
   ctx.fillText("stability as trees grow", chart.x, chart.y - 10);
