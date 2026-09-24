@@ -185,9 +185,9 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information.
 
 ## 📜 License
 
-AI Training Arcade is released under the **GNU General Public License v3.0 (GPL-3.0)**.
+AI Training Arcade is released under the **GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)**.
 
-You are free to use, study, modify, and redistribute the project under the terms of the GPL-3.0.
+You are free to use, study, modify, and redistribute the project under the GNU AGPL, either version 3 of the License or, at your option, any later version.
 
 See [`LICENSE`](LICENSE) for the full license text.
 
