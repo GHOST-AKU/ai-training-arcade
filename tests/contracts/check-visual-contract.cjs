@@ -31,9 +31,12 @@ const index = fs.readFileSync("index.html", "utf8");
 assert(index.includes('data-lab="home"'), "index: body must identify the home route");
 assert.deepStrictEqual(scriptsIn(index), sharedScripts, "index: script assembly must use only manifest + bootstrap");
 assert(index.includes(`href="./styles.css?v=${assetVersion}"`), "index: stylesheet must use the shared asset version");
+const machineLearning = fs.readFileSync("machine-learning.html", "utf8");
+assert(index.includes('href="./machine-learning.html"'), "index: machine learning section must be reachable");
+assert.deepStrictEqual(scriptsIn(machineLearning), sharedScripts, "machine-learning: use shared bootstrap");
 labs.forEach((definition) => {
-  const occurrences = index.split(`href="${definition.href}"`).length - 1;
-  assert.strictEqual(occurrences, 1, `index: ${definition.id} must appear exactly once in the game list`);
+  const occurrences = machineLearning.split(`href="${definition.href}"`).length - 1;
+  assert.strictEqual(occurrences, 1, `machine-learning: ${definition.id} must appear exactly once in the game list`);
 });
 
 labs.forEach((definition) => {
@@ -114,7 +117,7 @@ assert(!runtime.includes("setInterval(step"), "runtime: auto training must not u
 assert(bootstrap.includes("definition.model") && bootstrap.includes("definition.lab"), "bootstrap: model/lab loading must come from manifest");
 assert(bootstrap.includes("./models/model-core.js"), "bootstrap: shared model core must load before model adapters");
 assert(bootstrap.includes("script.src = versionAsset(source)"), "bootstrap: dynamically loaded scripts must use the shared asset version");
-assert(runtime.includes('textContent: "👾 ML ARCADE"'), "navigation: restore the pixel arcade mascot");
+assert(runtime.includes('textContent: "👾 AI ARCADE"'), "navigation: preserve the AI arcade identity and mascot");
 
 const treeModel = fs.readFileSync("models/tree-model.js", "utf8");
 const forestModel = fs.readFileSync("models/forest-model.js", "utf8");

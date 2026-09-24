@@ -4,9 +4,11 @@ AI Training Arcade 是无需打包的静态站点，使用 HTML、CSS、普通 J
 
 ```text
 ai-training-arcade/             # 本地目录沿用 gbm-gradient-game
-├── index.html                  # 大厅
+├── index.html                  # 学习方向首页
+├── machine-learning.html       # 机器学习板块与八个训练场入口
 ├── <id>.html                   # 八个训练场的稳定入口
 ├── styles.css                  # 全站样式与视觉变量
+├── styles/home.css             # 新首页独立样式
 ├── assets/                     # 随站点分发的字体等静态资源及许可证
 ├── core/                       # 共享运行时、加载入口、清单和中英文支持
 ├── labs/                       # 每个训练场的关卡、交互状态与绘制
@@ -35,6 +37,8 @@ ai-training-arcade/             # 本地目录沿用 gbm-gradient-game
 ```
 
 ## 依赖和职责
+
+首页按机器学习、深度学习、强化学习划分方向；后两者尚未开放，使用不可点击的施工中说明。机器学习板块页复用 home 的共享加载流程（不加载算法），实际训练场仍由 manifest 管理。新增可玩的方向时，再添加其板块页和训练场清单。
 
 - `core/lab-manifest.js`：训练场 ID、页面、算法、交互脚本、导航和 smoke 参数的集中清单。部分专项 QA 仍有自己的覆盖列表，新增训练场时要检查。
 - `core/bootstrap.js`：按照清单加载模型、共享运行时和训练场脚本，并处理资源版本参数。

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>逻辑回归训练场</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260921-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260922-1" />
   </head>
   <body class="logistic-page compact-lab-page" data-lab="logistic">
     <nav class="lab-switch" aria-label="切换训练场"></nav>
@@ -22,7 +22,10 @@
             <div class="score-card compact"><span>轮次</span><strong id="roundValue">0</strong></div>
           </div>
         </div>
-        <div id="toast" class="toast" role="status">训练权重，让概率边界穿过两类之间。</div>
+        <div class="training-feedback">
+          <span class="feedback-label" id="feedbackLabel">训练反馈</span>
+          <div id="toast" class="toast" role="status" aria-labelledby="feedbackLabel" aria-atomic="true">训练权重，让概率边界穿过两类之间。</div>
+        </div>
         <section class="panel-block view-card">
           <h2>观察方式</h2>
           <div id="viewPicker" class="segmented" aria-label="选择观察方式">
@@ -89,7 +92,7 @@
         <section data-training-log data-initial-status="未训练：所有点先按初始概率判断。" data-empty-message="还没有训练。每一步会记录交叉熵、正确率、权重和分类得分。"></section>
       </aside>
     </main>
-    <script src="./core/lab-manifest.js?v=20260921-1"></script>
-    <script src="./core/bootstrap.js?v=20260921-1"></script>
+    <script src="./core/lab-manifest.js?v=20260922-1"></script>
+    <script src="./core/bootstrap.js?v=20260922-1"></script>
   </body>
 </html>

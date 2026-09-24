@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>梯度提升机训练场</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260921-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260922-1" />
   </head>
   <body class="gbm-page" data-lab="gbm">
     <nav class="lab-switch" aria-label="切换训练场"></nav>
@@ -29,7 +29,10 @@
           </div>
         </div>
 
-        <div id="toast" class="toast" role="status">先看蓝线的平均猜测，再训练第一棵弱树追残差。</div>
+        <div class="training-feedback">
+          <span class="feedback-label" id="feedbackLabel">训练反馈</span>
+          <div id="toast" class="toast" role="status" aria-labelledby="feedbackLabel" aria-atomic="true">先看蓝线的平均猜测，再训练第一棵弱树追残差。</div>
+        </div>
 
         <section class="panel-block view-card">
           <h2>观察方式</h2>
@@ -135,7 +138,7 @@
       </aside>
     </main>
 
-    <script src="./core/lab-manifest.js?v=20260921-1"></script>
-    <script src="./core/bootstrap.js?v=20260921-1"></script>
+    <script src="./core/lab-manifest.js?v=20260922-1"></script>
+    <script src="./core/bootstrap.js?v=20260922-1"></script>
   </body>
 </html>
