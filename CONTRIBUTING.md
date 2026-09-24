@@ -55,4 +55,4 @@ npm run benchmark
 
 ## License
 
-提交代码即表示你同意贡献内容以 GPL-3.0 协议发布。
+提交代码即表示你同意贡献内容以 AGPL-3.0-or-later 协议发布。

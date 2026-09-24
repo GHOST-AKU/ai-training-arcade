@@ -14,5 +14,6 @@
     "playability": "node tests/gameplay/check-playability.cjs",
     "i18n:check": "node tests/contracts/check-i18n.cjs",
     "qa:dom": "node tests/browser/dom-qa.cjs"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }

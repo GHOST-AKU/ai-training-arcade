@@ -1,58 +1,119 @@
 # AI Training Arcade 👾
 
-> 🎮 **[立即在线游玩 AI Training Arcade](https://ghost-aku.github.io/ai-training-arcade/)**
+**Learn AI by playing with it.**
 
-**AI Training Arcade** 是一个开源的交互式人工智能学习街机厅。
+🎮 **[Play AI Training Arcade](https://ghost-aku.github.io/ai-training-arcade/)**
 
-它不是一个算法展示页面，而是一系列可玩的训练场：玩家通过调整参数、观察模型行为、管理计算预算，在关卡中理解人工智能算法为什么成功、为什么失败。
+**English** | [简体中文](README.zh-CN.md)
 
-项目目前从经典机器学习开始，未来将扩展到深度学习、强化学习和更多 AI 方法。
+**AI Training Arcade** is an open-source collection of playable AI training grounds.
 
-> Learn AI by playing with it.
+Instead of simply watching an algorithm animation, you step into the training loop: adjust parameters, make decisions, observe model behavior, manage computation, fail a challenge, change your strategy, and try again.
 
-## 当前训练场
+The goal is simple:
+
+> **Turn AI learning into something you can play.**
+
+---
+
+## 🕹️ What is an AI Training Arcade?
+
+Many interactive AI demos let you move a slider and watch a graph change.
+
+AI Training Arcade tries to go one step further.
+
+Each training ground is designed around a playable loop:
+
+**Challenge → Experiment → Feedback → Success / Failure → Retry**
+
+The player is not just observing the algorithm from the outside.
+
+**The player is part of the training loop.**
+
+---
+
+## 🎮 Training Grounds
 
 ### Classical Machine Learning
 
-- **GBM 梯度提升机**：观察弱学习器如何逐轮修正残差。
-- **SVM 最大间隔**：理解支持向量、间隔和决策边界。
-- **K-Means 聚类**：观察质心移动和聚类迭代。
-- **决策树**：探索切分规则如何形成边界。
-- **线性回归**：观察梯度下降和损失优化。
-- **逻辑回归**：理解概率边界和分类。
-- **神经网络**：观察隐藏层、权重和反向传播。
-- **随机森林**：理解集成学习和投票机制。
+| Training Ground | What you play with |
+| --- | --- |
+| 🌲 **Gradient Boosting** | Build weak learners step by step and watch residuals change |
+| 📏 **Support Vector Machine** | Explore margins, support vectors, and decision boundaries |
+| 🟣 **K-Means** | Watch centroids move as clustering iterates |
+| 🌳 **Decision Tree** | Explore how recursive splits partition feature space |
+| 📈 **Linear Regression** | Follow gradient descent as the model searches for a better fit |
+| 🎯 **Logistic Regression** | Explore probabilistic classification boundaries |
+| 🧠 **Neural Network** | Experiment with hidden layers, weights, and backpropagation |
+| 🌲🌲🌲 **Random Forest** | Explore ensemble learning, randomness, and voting |
 
-## Roadmap
+More machines are under construction.
+
+🚧 **Deep Learning — under construction**
+
+🚧 **Reinforcement Learning — under construction**
+
+---
+
+## 🚧 What's Next?
+
+AI Training Arcade currently focuses on classical machine learning, but the arcade is expanding.
 
 ### Deep Learning
 
-计划加入：
+Planned training grounds include:
 
-- CNN 像素识别训练场
-- 优化器实验室
-- Dropout 与泛化挑战
-- 自编码器实验
-- Attention / Transformer 可视化
+- 🖼️ CNN Pixel Recognition
+- ⚙️ Optimizer Lab
+- 🎲 Dropout & Generalization Challenge
+- 🪞 Autoencoder Lab
+- 👁️ Attention Playground
+- 🤖 Transformer Training Ground
 
 ### Reinforcement Learning
 
-计划加入：
+Planned training grounds include:
 
-- Multi-Armed Bandit
-- Grid World
-- Q-Learning
-- Policy Gradient
-- 多智能体实验
+- 🎰 Multi-Armed Bandit
+- 🗺️ Grid World
+- 🧭 Q-Learning
+- 📊 Policy Gradient
+- 🤝 Multi-Agent Experiments
 
-## 设计理念
+The long-term goal is not to collect every AI algorithm ever invented. It is to find the ones that can become good games for understanding how intelligent systems learn and behave.
 
-- 可玩，而不是只可看
-- 理解，而不是背公式
-- 每个挑战必须存在可行解
-- 展示模型如何学习、犯错和改变
+---
 
-## 本地运行
+## 🧩 Project Structure
+
+AI Training Arcade is evolving from individual experiments into a shared arcade platform.
+
+```text
+ai-training-arcade/
+├── assets/          # Shared visual assets
+├── core/            # Shared arcade systems
+├── docs/            # Project documentation
+├── labs/            # Training-ground implementations
+├── models/          # Model and algorithm logic
+├── scripts/         # Development and testing tools
+│
+├── index.html       # Arcade entrance
+├── styles.css       # Shared styles
+│
+├── README.md
+├── README.zh-CN.md
+├── CONTRIBUTING.md
+├── VISUAL_LANGUAGE.md
+└── LICENSE
+```
+
+Some legacy standalone training-ground files remain while the project architecture continues to evolve.
+
+---
+
+## 🛠️ Run Locally
+
+Clone the repository and start a local HTTP server:
 
 开发者先阅读 [文档导航](docs/README.md)、[项目结构](docs/ARCHITECTURE.md)和[开发与验证](docs/DEVELOPMENT.md)。当前工作状态见 [项目快照](docs/project/STATE_SNAPSHOT.md)。
 
@@ -62,35 +123,88 @@
 python -m http.server 4173 --bind 127.0.0.1
 ```
 
-打开：
+Then open:
 
 ```text
 http://127.0.0.1:4173
 ```
 
-## 测试
+---
+
+## 🧪 Testing
+
+Run the main test suite:
 
 ```bash
 npm test
 ```
 
-包括：
+Current checks include:
 
-- 算法 smoke test
-- 关卡可达性检查
-- UI 结构检查
-- 中英文覆盖检查
+- algorithm smoke tests
+- challenge reachability
+- UI structure
+- Chinese / English coverage
 
-额外性能测试：
+Run performance benchmarks with:
 
 ```bash
 npm run benchmark
 ```
 
-## 开源协议
+---
 
-本项目采用 **GNU General Public License v3.0 (GPL-3.0)** 发布。
+## 🎨 Visual Language
 
-修改后的分发版本必须继续遵循 GPL-3.0。
+AI Training Arcade has a shared visual language for keeping its training grounds coherent.
 
-GPL-3.0 © 2026 GHOST-AKU
+See [`docs/design/VISUAL_LANGUAGE.md`](docs/design/VISUAL_LANGUAGE.md) for the project's visual guidelines.
+
+Developers can start with the [documentation index](docs/README.md), [architecture guide](docs/ARCHITECTURE.md), and [development guide](docs/DEVELOPMENT.md). Current project status is recorded in the [project snapshot](docs/project/STATE_SNAPSHOT.md).
+
+---
+
+## 🤝 Contributing
+
+AI Training Arcade is open source, and contributions do not have to introduce a new algorithm.
+
+Useful contributions can include:
+
+- designing a better challenge
+- improving an existing model simulation
+- finding an unwinnable level
+- improving accessibility
+- refining the arcade UI
+- adding tests
+- improving documentation
+- turning an existing visualization into an actual game
+
+Before adding a new training ground, ask one question:
+
+> **What does the player actually do?**
+
+If the answer is only “watch the visualization,” it probably isn't an arcade machine yet.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information.
+
+---
+
+## 📜 License
+
+AI Training Arcade is released under the **GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)**.
+
+You are free to use, study, modify, and redistribute the project under the GNU AGPL, either version 3 of the License or, at your option, any later version.
+
+See [`LICENSE`](LICENSE) for the full license text.
+
+---
+
+<p align="center">
+
+### 👾 INSERT COIN
+
+**Choose a model. Break it. Understand it. Train again.**
+
+[Enter the Arcade →](https://ghost-aku.github.io/ai-training-arcade/)
+
+</p>
