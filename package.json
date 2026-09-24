@@ -14,5 +14,6 @@
     "playability": "node scripts/check-playability.cjs",
     "i18n:check": "node scripts/check-i18n.cjs",
     "qa:dom": "node scripts/dom-qa.cjs"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }
