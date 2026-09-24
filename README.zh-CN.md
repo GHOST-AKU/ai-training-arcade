@@ -187,9 +187,9 @@ AI Training Arcade 是一个开源项目，贡献并不意味着一定要加入�
 
 ## 📜 开源协议
 
-AI Training Arcade 使用 **GNU General Public License v3.0（GPL-3.0）** 开源。
+AI Training Arcade 使用 **GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later）** 开源。
 
-你可以按照 GPL-3.0 的条款使用、研究、修改和重新分发本项目。
+你可以按照 GNU AGPL 第 3 版，或（由你选择）自由软件基金会此后发布的任何更新版本，使用、研究、修改和重新分发本项目。
 
 完整协议请参阅 [`LICENSE`](LICENSE)。
 
